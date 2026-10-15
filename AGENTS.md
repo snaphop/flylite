@@ -95,4 +95,18 @@ Checker Framework stub files live in `etc/checker`.
   `System.Logger`). No logging dependencies.
 * No Lombok. Prefer records, sealed types, `switch` expressions and `List`/`Map` over
   arrays in new code.
-* Do not run `mvn deploy`; publishing is not set up yet.
+
+## Releasing
+
+Artifacts are deployed to Snaphop's Nexus (`maven.snaphop.com`) only, not Maven Central.
+`.snaphop/settings.xml` defines the repositories used by `distributionManagement`; the
+password comes from `NEXUS_SNAPHOP_COM_PASSWORD` (a GitHub secret in CI).
+
+* Releases are `X.Y.Z`, starting at `1.0.0`; after each release the patch is bumped
+  (`1.0.1-SNAPSHOT`, ...).
+* `bin/release.sh` releases the current snapshot: sets the version, runs the build, commits,
+  tags `vX.Y.Z`, bumps to the next patch snapshot and pushes. The tag push runs
+  `.github/workflows/deploy-snaphop.yml`, which deploys the release.
+* Snapshots: run the "Deploy to SnapHop" workflow manually on a branch.
+* `bin/deploy.sh` deploys from a local machine if the workflow cannot be used.
+* Only release when the user asks for it.

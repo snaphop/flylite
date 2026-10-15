@@ -47,7 +47,7 @@ must be opened, for example `opens db.migration;`.
 <plugin>
   <groupId>com.snaphop.flylite</groupId>
   <artifactId>flylite-maven-plugin</artifactId>
-  <version>${flylite.version}</version>
+  <version>1.0.0</version>
   <configuration>
     <url>${db.url}</url>
     <user>${db.user}</user>
@@ -80,6 +80,20 @@ JBoss VFS/OSGi scanning, pluggable loggers and the HTML/JSON reports.
 ## License
 
 Apache License 2.0. See [NOTICE](NOTICE).
+
+## Getting it
+
+Released to Snaphop's repository (`https://maven.snaphop.com`), not Maven Central:
+
+```xml
+<dependency>
+  <groupId>com.snaphop.flylite</groupId>
+  <artifactId>flylite</artifactId>
+  <version>1.0.0</version>
+</dependency>
+```
+
+Releases are made with `bin/release.sh` (see [AGENTS.md](AGENTS.md)).
 
 ## Building
 

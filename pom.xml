@@ -5,7 +5,7 @@
   <artifactId>flylite-maven-parent</artifactId>
   <name>flylite-maven-parent</name>
   <packaging>pom</packaging>
-  <version>0.1.0-SNAPSHOT</version>
+  <version>1.0.0-SNAPSHOT</version>
   <url>https://github.com/snaphop/flylite</url>
   <description>Small, modular database migrations for PostgreSQL and SQLite (a Flyway rewrite)</description>
   <organization>
@@ -16,7 +16,7 @@
     <java.version>21</java.version>
     <flylite.failOnWarning>true</flylite.failOnWarning>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <project.build.outputTimestamp>1792022400</project.build.outputTimestamp>
+    <project.build.outputTimestamp>1792094898</project.build.outputTimestamp>
     <!--
     Pins the build to a specific version of maven for reproducible builds
     as well as lets dependabot check for maven updates.
@@ -59,6 +59,24 @@
       <organization>snaphop</organization>
     </developer>
   </developers>
+
+  <!--
+    Deploy targets come from the snaphop profile in .snaphop/settings.xml:
+      ./mvnw -s .snaphop/settings.xml deploy
+    (password from the NEXUS_SNAPHOP_COM_PASSWORD environment variable). See bin/release.sh.
+  -->
+  <distributionManagement>
+    <snapshotRepository>
+      <id>${snapshotRepository.id}</id>
+      <name>${snapshotRepository.name}</name>
+      <url>${snapshotRepository.url}</url>
+    </snapshotRepository>
+    <repository>
+      <id>${releaseRepository.id}</id>
+      <name>${releaseRepository.name}</name>
+      <url>${releaseRepository.url}</url>
+    </repository>
+  </distributionManagement>
 
   <dependencies>
     <dependency>
@@ -215,6 +233,15 @@
           <version>3.4.0</version>
         </plugin>
         <plugin>
+          <groupId>org.codehaus.mojo</groupId>
+          <artifactId>versions-maven-plugin</artifactId>
+          <version>2.23.0</version>
+          <configuration>
+            <generateBackupPoms>false</generateBackupPoms>
+            <processAllModules>true</processAllModules>
+          </configuration>
+        </plugin>
+        <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-javadoc-plugin</artifactId>
           <version>3.12.0</version>
@@ -251,6 +278,20 @@
         </plugin>
       </plugins>
     </pluginManagement>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-source-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>attach-sources</id>
+            <goals>
+              <goal>jar-no-fork</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
   </build>
 
   <profiles>
@@ -297,6 +338,41 @@
                     <requireMavenVersion>
                       <version>3.9</version>
                     </requireMavenVersion>
+                  </rules>
+                  <fail>true</fail>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+    <profile>
+      <!-- Used by bin/release.sh and the deploy workflow when deploying a release. -->
+      <id>release</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-enforcer-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>enforce-release</id>
+                <goals>
+                  <goal>enforce</goal>
+                </goals>
+                <configuration>
+                  <rules>
+                    <requireReleaseVersion>
+                      <message>Releases must not be SNAPSHOT versions</message>
+                    </requireReleaseVersion>
+                    <requireReleaseDeps>
+                      <message>Releases must not depend on SNAPSHOT versions</message>
+                    </requireReleaseDeps>
+                    <requireProperty>
+                      <property>releaseRepository.url</property>
+                      <message>Deploy with -s .snaphop/settings.xml</message>
+                    </requireProperty>
                   </rules>
                   <fail>true</fail>
                 </configuration>
