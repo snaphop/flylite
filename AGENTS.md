@@ -98,7 +98,7 @@ Checker Framework stub files live in `etc/checker`.
 
 ## Releasing
 
-Artifacts are deployed to Snaphop's Nexus (`maven.snaphop.com`) only, not Maven Central.
+Artifacts are deployed to Snaphop's Maven repository (`maven.snaphop.com`) only, not Maven Central.
 `.snaphop/settings.xml` defines the repositories used by `distributionManagement`; the
 password comes from `NEXUS_SNAPHOP_COM_PASSWORD` (a GitHub secret in CI).
 
