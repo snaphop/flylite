@@ -190,7 +190,9 @@ public final class AppliedMigration implements Comparable<AppliedMigration> {
 		return o instanceof AppliedMigration that && executionTime == that.executionTime
 				&& installedRank == that.installedRank && success == that.success
 				&& Objects.equals(checksum, that.checksum) && description.equals(that.description)
-				&& Objects.equals(installedBy, that.installedBy) && Objects.equals(installedOn, that.installedOn)
+				&& Objects.equals(installedBy, that.installedBy)
+				&& Objects.equals(installedOn == null ? null : installedOn.toInstant(),
+						that.installedOn == null ? null : that.installedOn.toInstant())
 				&& script.equals(that.script) && type == that.type && Objects.equals(version, that.version);
 	}
 

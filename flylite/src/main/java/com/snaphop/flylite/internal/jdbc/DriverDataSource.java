@@ -73,7 +73,7 @@ public final class DriverDataSource implements DataSource {
 		props.putAll(jdbcProperties);
 		this.properties = props;
 		try {
-			this.driver = ClassUtils.instantiate(resolvedDriverClass, classLoader);
+			this.driver = ClassUtils.instantiate(resolvedDriverClass, classLoader, Driver.class);
 		}
 		catch (FlyliteException e) {
 			throw new FlyliteException("Unable to instantiate JDBC driver: " + resolvedDriverClass

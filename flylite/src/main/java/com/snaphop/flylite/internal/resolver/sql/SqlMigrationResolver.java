@@ -16,7 +16,6 @@
  */
 package com.snaphop.flylite.internal.resolver.sql;
 
-import com.snaphop.flylite.internal.logging.Log;
 import com.snaphop.flylite.api.MigrationType;
 import com.snaphop.flylite.api.ResourceProvider;
 import com.snaphop.flylite.api.callback.Event;
@@ -46,8 +45,6 @@ import java.util.List;
  * V1__Description.sql, V1_1__Description.sql, or R__description.sql.
  */
 public class SqlMigrationResolver implements MigrationResolver {
-
-	private static final Log LOG = Log.of(SqlMigrationResolver.class);
 
 	private final SqlScriptExecutorFactory sqlScriptExecutorFactory;
 

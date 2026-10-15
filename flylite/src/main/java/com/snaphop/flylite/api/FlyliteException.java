@@ -16,6 +16,8 @@
  */
 package com.snaphop.flylite.api;
 
+import org.jspecify.annotations.Nullable;
+
 /**
  * Exception thrown when Flylite encounters a problem.
  */
@@ -29,7 +31,7 @@ public class FlyliteException extends RuntimeException {
 	 * @param cause The exception cause.
 	 * @param errorCode The error code.
 	 */
-	public FlyliteException(String message, Throwable cause, ErrorCode errorCode) {
+	public FlyliteException(@Nullable String message, @Nullable Throwable cause, ErrorCode errorCode) {
 		super(message, cause);
 		this.errorCode = errorCode;
 	}
@@ -39,7 +41,7 @@ public class FlyliteException extends RuntimeException {
 	 * @param message The exception message.
 	 * @param errorCode The error code.
 	 */
-	public FlyliteException(String message, ErrorCode errorCode) {
+	public FlyliteException(@Nullable String message, ErrorCode errorCode) {
 		super(message);
 		this.errorCode = errorCode;
 	}
@@ -49,7 +51,7 @@ public class FlyliteException extends RuntimeException {
 	 * @param message The exception message.
 	 * @param cause The exception cause.
 	 */
-	public FlyliteException(String message, Throwable cause) {
+	public FlyliteException(@Nullable String message, @Nullable Throwable cause) {
 		super(message, cause);
 	}
 
@@ -58,7 +60,7 @@ public class FlyliteException extends RuntimeException {
 	 * getMessage().
 	 * @param cause The exception cause.
 	 */
-	public FlyliteException(Throwable cause) {
+	public FlyliteException(@Nullable Throwable cause) {
 		super(cause);
 	}
 
@@ -66,7 +68,7 @@ public class FlyliteException extends RuntimeException {
 	 * Creates a new FlyliteException with this message.
 	 * @param message The exception message.
 	 */
-	public FlyliteException(String message) {
+	public FlyliteException(@Nullable String message) {
 		super(message);
 	}
 

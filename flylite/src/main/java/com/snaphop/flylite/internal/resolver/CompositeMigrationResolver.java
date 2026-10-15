@@ -16,6 +16,8 @@
  */
 package com.snaphop.flylite.internal.resolver;
 
+import org.jspecify.annotations.Nullable;
+
 import com.snaphop.flylite.api.ClassProvider;
 import com.snaphop.flylite.api.ErrorCode;
 import com.snaphop.flylite.api.FlyliteException;
@@ -46,7 +48,7 @@ public class CompositeMigrationResolver implements MigrationResolver {
 
 	private final SqlScriptExecutorFactory sqlScriptExecutorFactory;
 
-	private List<ResolvedMigration> availableMigrations;
+	private @Nullable List<ResolvedMigration> availableMigrations;
 
 	public CompositeMigrationResolver(ResourceProvider resourceProvider, ClassProvider<JavaMigration> classProvider,
 			Configuration configuration, SqlScriptExecutorFactory sqlScriptExecutorFactory,
@@ -58,7 +60,7 @@ public class CompositeMigrationResolver implements MigrationResolver {
 		if (!configuration.isSkipDefaultResolvers()) {
 			migrationResolvers.add(new SqlMigrationResolver(resourceProvider, sqlScriptExecutorFactory,
 					sqlScriptFactory, configuration, parsingContext));
-			migrationResolvers.add(JavaMigrationResolver.scanning(classProvider, configuration));
+			migrationResolvers.add(JavaMigrationResolver.scanning(classProvider));
 
 		}
 
@@ -94,10 +96,12 @@ public class CompositeMigrationResolver implements MigrationResolver {
 
 	@Override
 	public Collection<ResolvedMigration> resolveMigrations(Context context) {
-		if (availableMigrations == null) {
-			availableMigrations = doFindAvailableMigrations(context);
+		List<ResolvedMigration> migrations = availableMigrations;
+		if (migrations == null) {
+			migrations = doFindAvailableMigrations(context);
+			availableMigrations = migrations;
 		}
-		return availableMigrations;
+		return migrations;
 	}
 
 	public Collection<ResolvedMigration> resolveMigrations(Configuration configuration) {

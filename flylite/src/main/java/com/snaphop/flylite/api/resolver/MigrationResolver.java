@@ -18,7 +18,6 @@ package com.snaphop.flylite.api.resolver;
 
 import com.snaphop.flylite.api.ResourceProvider;
 import com.snaphop.flylite.api.configuration.Configuration;
-import com.snaphop.flylite.api.MigrationType;
 import com.snaphop.flylite.internal.sqlscript.SqlScriptExecutorFactory;
 import com.snaphop.flylite.internal.sqlscript.SqlScriptFactory;
 import java.util.Collection;
@@ -52,17 +51,5 @@ public interface MigrationResolver {
 	}
 
 	Collection<ResolvedMigration> resolveMigrations(Context context);
-
-	/**
-	 * @return The prefix this resolver looks for. {@code null} if no particular prefix is
-	 * used
-	 */
-	default String getPrefix(Configuration configuration) {
-		return null;
-	}
-
-	default MigrationType getDefaultMigrationType() {
-		return null;
-	}
 
 }

@@ -47,11 +47,11 @@ public class PlainExecutionTemplate implements ExecutionTemplate {
 				LOG.error(
 						"Failed to execute operation in non-transactional context. Please restore backups and roll back database and code!");
 			}
-			if (e instanceof SQLException) {
-				throw new FlyliteSqlException("Failed to execute operation.", (SQLException) e);
+			if (e instanceof SQLException sqlException) {
+				throw new FlyliteSqlException("Failed to execute operation.", sqlException);
 			}
-			if (e instanceof RuntimeException) {
-				throw (RuntimeException) e;
+			if (e instanceof RuntimeException runtimeException) {
+				throw runtimeException;
 			}
 			throw new FlyliteException(e);
 		}

@@ -20,7 +20,8 @@ import com.snaphop.flylite.api.FlyliteException;
 import com.snaphop.flylite.internal.sqlscript.Delimiter;
 
 import java.security.InvalidParameterException;
-import java.util.Stack;
+import java.util.ArrayDeque;
+import java.util.Deque;
 
 public class ParserContext {
 
@@ -28,13 +29,11 @@ public class ParserContext {
 
 	private int blockDepth = 0;
 
-	private final Stack<String> blockInitiators = new Stack<>();
-
-	private String lastClosedBlockInitiator = null;
+	private final Deque<String> blockInitiators = new ArrayDeque<>();
 
 	private Delimiter delimiter;
 
-	private StatementType statementType;
+	private StatementType statementType = StatementType.UNKNOWN;
 
 	public ParserContext(Delimiter delimiter) {
 		this.delimiter = delimiter;
@@ -55,9 +54,6 @@ public class ParserContext {
 	// When a block is closed, retain the token that opened it, so that we can determine
 	// what the
 	// context of a given END is.
-	public String getLastClosedBlockInitiator() {
-		return lastClosedBlockInitiator;
-	}
 
 	public void increaseBlockDepth(String blockInitiator) {
 		blockInitiators.push(blockInitiator);
@@ -69,7 +65,7 @@ public class ParserContext {
 			throw new FlyliteException("Flylite parsing bug: unable to decrease block depth below 0");
 		}
 		blockDepth--;
-		lastClosedBlockInitiator = blockInitiators.pop();
+		blockInitiators.pop();
 	}
 
 	public int getBlockDepth() {
@@ -77,7 +73,8 @@ public class ParserContext {
 	}
 
 	public String getBlockInitiator() {
-		return blockInitiators.size() > 0 ? blockInitiators.peek() : "";
+		String initiator = blockInitiators.peek();
+		return initiator == null ? "" : initiator;
 	}
 
 	public Delimiter getDelimiter() {
@@ -104,7 +101,7 @@ public class ParserContext {
 			return true;
 		}
 		// Some statement types admit other characters as letters
-		if (getStatementType() != StatementType.UNKNOWN) {
+		if (!StatementType.UNKNOWN.equals(getStatementType())) {
 			return statementType.treatAsIfLetter(c);
 		}
 		return false;

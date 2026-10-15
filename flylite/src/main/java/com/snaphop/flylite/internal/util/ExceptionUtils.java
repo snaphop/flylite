@@ -21,12 +21,10 @@ import java.sql.SQLException;
 public class ExceptionUtils {
 
 	/**
+	 * Returns the root cause or the throwable itself if it doesn't have a cause.
 	 * @return The root cause or the throwable itself if it doesn't have a cause.
 	 */
 	public static Throwable getRootCause(Throwable throwable) {
-		if (throwable == null) {
-			return null;
-		}
 		Throwable cause = throwable;
 		Throwable rootCause;
 		while ((rootCause = cause.getCause()) != null) {
@@ -50,8 +48,10 @@ public class ExceptionUtils {
 	 */
 	public static String toMessage(SQLException e) {
 		SQLException cause = e;
-		while (cause.getNextException() != null) {
-			cause = cause.getNextException();
+		SQLException next = cause.getNextException();
+		while (next != null) {
+			cause = next;
+			next = cause.getNextException();
 		}
 		String message = "SQL State  : " + cause.getSQLState() + "\n" + "Error Code : " + cause.getErrorCode() + "\n";
 		if (cause.getMessage() != null) {

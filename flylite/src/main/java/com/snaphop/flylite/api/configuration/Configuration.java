@@ -208,18 +208,6 @@ public interface Configuration {
 	String getPlaceholderSeparator();
 
 	/**
-	 * The suffix of every script placeholder.
-	 * @return {@code __} by default.
-	 */
-	String getScriptPlaceholderSuffix();
-
-	/**
-	 * The prefix of every script placeholder.
-	 * @return {@code FP__} by default.
-	 */
-	String getScriptPlaceholderPrefix();
-
-	/**
 	 * The placeholders to replace in SQL migration scripts.
 	 * @return placeholders.
 	 */

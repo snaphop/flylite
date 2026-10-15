@@ -14,6 +14,7 @@
   </organization>
   <properties>
     <java.version>21</java.version>
+    <flylite.failOnWarning>true</flylite.failOnWarning>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.build.outputTimestamp>1792022400</project.build.outputTimestamp>
     <!--
@@ -166,10 +167,12 @@
             <release>${java.version}</release>
             <encoding>${project.build.sourceEncoding}</encoding>
             <showWarnings>true</showWarnings>
-            <failOnWarning>true</failOnWarning>
+            <failOnWarning>${flylite.failOnWarning}</failOnWarning>
             <compilerArgs>
               <arg>-proc:full</arg>
               <arg>-Xlint:all,-processing,-serial,-try,-options,-exports,-requires-automatic</arg>
+              <arg>-Xmaxwarns</arg>
+              <arg>10000</arg>
             </compilerArgs>
           </configuration>
         </plugin>

@@ -18,37 +18,16 @@ package com.snaphop.flylite.internal.jdbc;
 
 import java.util.List;
 
-public class Result {
+import org.jspecify.annotations.Nullable;
 
-	private final long updateCount;
-
-	private final List<String> columns;
-
-	private final List<List<String>> data;
-
-	private final String sql;
-
-	public Result(final long updateCount, final List<String> columns, final List<List<String>> data, final String sql) {
-		this.updateCount = updateCount;
-		this.columns = columns;
-		this.data = data;
-		this.sql = sql;
-	}
-
-	public long getUpdateCount() {
-		return this.updateCount;
-	}
-
-	public List<String> getColumns() {
-		return this.columns;
-	}
-
-	public List<List<String>> getData() {
-		return this.data;
-	}
-
-	public String getSql() {
-		return this.sql;
-	}
-
+/**
+ * The result of one statement.
+ *
+ * @param updateCount the update count or {@code -1} for queries.
+ * @param columns the column names of a query or {@code null}.
+ * @param data the rows of a query or {@code null}.
+ * @param sql the sql.
+ */
+public record Result(long updateCount, @Nullable List<String> columns, @Nullable List<List<@Nullable String>> data,
+		String sql) {
 }

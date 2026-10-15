@@ -16,6 +16,8 @@
  */
 package com.snaphop.flylite.internal.scanner;
 
+import org.jspecify.annotations.Nullable;
+
 import com.snaphop.flylite.internal.scanner.classpath.ClassPathLocationScanner;
 
 import java.net.URL;
@@ -34,7 +36,7 @@ public class LocationScannerCache {
 		return cache.containsKey(protocol);
 	}
 
-	public ClassPathLocationScanner get(String protocol) {
+	public @Nullable ClassPathLocationScanner get(String protocol) {
 		return cache.get(protocol);
 	}
 

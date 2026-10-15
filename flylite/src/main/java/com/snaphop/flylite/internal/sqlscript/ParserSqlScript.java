@@ -16,6 +16,8 @@
  */
 package com.snaphop.flylite.internal.sqlscript;
 
+import org.jspecify.annotations.Nullable;
+
 import com.snaphop.flylite.internal.logging.Log;
 import com.snaphop.flylite.api.FlyliteException;
 import com.snaphop.flylite.api.resource.LoadableResource;
@@ -60,7 +62,8 @@ public class ParserSqlScript implements SqlScript {
 	 * @param mixed Whether to allow mixing transactional and non-transactional statements
 	 * within the same migration.
 	 */
-	public ParserSqlScript(Parser parser, LoadableResource resource, LoadableResource metadataResource, boolean mixed) {
+	public ParserSqlScript(Parser parser, LoadableResource resource, @Nullable LoadableResource metadataResource,
+			boolean mixed) {
 		this.resource = resource;
 		this.metadata = SqlScriptMetadata.fromResource(metadataResource, parser);
 		this.parser = parser;

@@ -16,6 +16,8 @@
  */
 package com.snaphop.flylite.internal.scanner;
 
+import org.jspecify.annotations.Nullable;
+
 import com.snaphop.flylite.internal.logging.Log;
 import com.snaphop.flylite.api.ClassProvider;
 import com.snaphop.flylite.api.Location;
@@ -48,7 +50,7 @@ public class Scanner<I> implements ResourceProvider, ClassProvider<I> {
 	// Lookup maps to speed up getResource
 	private final HashMap<String, LoadableResource> relativeResourceMap = new HashMap<>();
 
-	private HashMap<String, LoadableResource> absoluteResourceMap = null;
+	private @Nullable HashMap<String, LoadableResource> absoluteResourceMap;
 
 	/*
 	 * Constructor. Scans the given locations for resources, and classes implementing the
@@ -76,22 +78,23 @@ public class Scanner<I> implements ResourceProvider, ClassProvider<I> {
 	}
 
 	@Override
-	public LoadableResource getResource(String name) {
+	public @Nullable LoadableResource getResource(String name) {
 		LoadableResource loadedResource = relativeResourceMap.get(name.toLowerCase(Locale.ROOT));
 		if (loadedResource != null) {
 			return loadedResource;
 		}
 		// Only build the HashMap and resolve the absolute paths if an
 		// absolute path is requested as this is really slow
-		// Should only ever be required for sqlplus @
 		if (Paths.get(name).isAbsolute()) {
-			if (absoluteResourceMap == null) {
-				absoluteResourceMap = new HashMap<>();
+			HashMap<String, LoadableResource> absolute = absoluteResourceMap;
+			if (absolute == null) {
+				absolute = new HashMap<>();
 				for (LoadableResource resource : resources) {
-					absoluteResourceMap.put(resource.getAbsolutePathOnDisk().toLowerCase(Locale.ROOT), resource);
+					absolute.put(resource.getAbsolutePathOnDisk().toLowerCase(Locale.ROOT), resource);
 				}
+				absoluteResourceMap = absolute;
 			}
-			loadedResource = absoluteResourceMap.get(name.toLowerCase(Locale.ROOT));
+			loadedResource = absolute.get(name.toLowerCase(Locale.ROOT));
 			if (loadedResource != null) {
 				return loadedResource;
 			}
@@ -126,6 +129,7 @@ public class Scanner<I> implements ResourceProvider, ClassProvider<I> {
 	 * the specified interface. Non-instantiable abstract classes are filtered out.
 	 * @return The non-abstract classes that were found.
 	 */
+	@Override
 	public Collection<Class<? extends I>> getClasses() {
 		return Collections.unmodifiableCollection(classes);
 	}

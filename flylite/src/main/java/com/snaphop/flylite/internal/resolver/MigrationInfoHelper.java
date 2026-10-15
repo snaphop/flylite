@@ -16,16 +16,26 @@
  */
 package com.snaphop.flylite.internal.resolver;
 
+import org.jspecify.annotations.Nullable;
+
 import com.snaphop.flylite.api.FlyliteException;
 import com.snaphop.flylite.api.MigrationVersion;
-import com.snaphop.flylite.internal.util.Pair;
 import com.snaphop.flylite.internal.util.StringUtils;
 
 /**
  * Parsing support for migrations that use the standard Flylite version + description
  * embedding in their name. These migrations have names like 1_2__Description .
  */
-public class MigrationInfoHelper {
+public final class MigrationInfoHelper {
+
+	/**
+	 * Version and description parsed from a migration name.
+	 *
+	 * @param version version or {@code null} for repeatable migrations.
+	 * @param description description.
+	 */
+	public record VersionAndDescription(@Nullable MigrationVersion version, String description) {
+	}
 
 	/**
 	 * Extracts the schema version and the description from a migration name formatted as
@@ -40,7 +50,7 @@ public class MigrationInfoHelper {
 	 * @throws FlyliteException if the migration name does not follow the standard
 	 * conventions.
 	 */
-	public static Pair<MigrationVersion, String> extractVersionAndDescription(String migrationName, String prefix,
+	public static VersionAndDescription extractVersionAndDescription(String migrationName, String prefix,
 			String separator, String[] suffixes, boolean repeatable) {
 		// Only handles Java migrations now
 		String cleanMigrationName = cleanMigrationName(migrationName, prefix, suffixes);
@@ -62,7 +72,7 @@ public class MigrationInfoHelper {
 						+ suffixes[0] + ")");
 			}
 			try {
-				return Pair.of(MigrationVersion.fromVersion(version), description);
+				return new VersionAndDescription(MigrationVersion.fromVersion(version), description);
 			}
 			catch (Exception e) {
 				throw new FlyliteException("Wrong versioned migration name format: " + migrationName
@@ -74,7 +84,7 @@ public class MigrationInfoHelper {
 					+ " (It must contain a version and should look like this: " + prefix + "1.2" + separator
 					+ description + suffixes[0] + ")");
 		}
-		return Pair.of(null, description);
+		return new VersionAndDescription(null, description);
 	}
 
 	private static String cleanMigrationName(String migrationName, String prefix, String[] suffixes) {

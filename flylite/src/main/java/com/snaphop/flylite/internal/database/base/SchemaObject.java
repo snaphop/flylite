@@ -45,6 +45,7 @@ public abstract class SchemaObject<D extends Database<?>, S extends Schema<?, ?>
 	}
 
 	/**
+	 * Returns the schema this object lives in.
 	 * @return The schema this object lives in.
 	 */
 	public final S getSchema() {
@@ -69,6 +70,7 @@ public abstract class SchemaObject<D extends Database<?>, S extends Schema<?, ?>
 	}
 
 	/**
+	 * Drops this object.
 	 * @throws java.sql.SQLException when the drop failed.
 	 */
 	protected abstract void doDrop() throws SQLException;

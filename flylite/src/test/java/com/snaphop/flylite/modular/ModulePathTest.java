@@ -18,11 +18,8 @@ import com.snaphop.flylite.Flylite;
  */
 class ModulePathTest {
 
-	@TempDir
-	Path dir;
-
 	@Test
-	void migratesAsNamedModule() throws Exception {
+	void migratesAsNamedModule(@TempDir Path dir) throws Exception {
 		assertTrue(Flylite.class.getModule().isNamed());
 		assertEquals("com.snaphop.flylite", Flylite.class.getModule().getName());
 		Path migrations = Files.createDirectories(dir.resolve("migrations"));

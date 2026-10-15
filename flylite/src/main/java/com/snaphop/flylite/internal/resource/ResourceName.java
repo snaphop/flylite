@@ -16,6 +16,8 @@
  */
 package com.snaphop.flylite.internal.resource;
 
+import org.jspecify.annotations.Nullable;
+
 import com.snaphop.flylite.api.FlyliteException;
 import com.snaphop.flylite.api.MigrationVersion;
 
@@ -50,7 +52,7 @@ public class ResourceName {
 	 * @return The fully populated parsing result.
 	 */
 	public static ResourceName invalid(String message) {
-		return new ResourceName(null, null, null, null, null, null, false, message);
+		return new ResourceName("", "", "", "", "", "", false, message);
 	}
 
 	/**
@@ -64,14 +66,14 @@ public class ResourceName {
 	}
 
 	private boolean isVersioned() {
-		return (!"".equals(version));
+		return !"".equals(version);
 	}
 
 	/**
 	 * The version of the resource (eg. "1.2.3" for versioned migrations), or null for
 	 * non-versioned resources
 	 */
-	public MigrationVersion getVersion() {
+	public @Nullable MigrationVersion getVersion() {
 		if (isVersioned()) {
 			return MigrationVersion.fromVersion(version);
 		}
@@ -89,16 +91,6 @@ public class ResourceName {
 					"Cannot access description of invalid ResourceNameParseResult\r\n" + validityMessage);
 		}
 		return description;
-	}
-
-	/**
-	 * The file type suffix of the resource (eg. ".sql" for SQL migration scripts)
-	 */
-	public String getSuffix() {
-		if (!isValid) {
-			throw new FlyliteException("Cannot access suffix of invalid ResourceNameParseResult\r\n" + validityMessage);
-		}
-		return suffix;
 	}
 
 	/**

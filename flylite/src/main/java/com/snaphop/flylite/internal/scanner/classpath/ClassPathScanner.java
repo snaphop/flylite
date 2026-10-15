@@ -16,6 +16,8 @@
  */
 package com.snaphop.flylite.internal.scanner.classpath;
 
+import org.jspecify.annotations.Nullable;
+
 import com.snaphop.flylite.internal.logging.Log;
 import com.snaphop.flylite.api.FlyliteException;
 import com.snaphop.flylite.api.Location;
@@ -67,6 +69,9 @@ public class ClassPathScanner<I> implements ResourceAndClassScanner<I> {
 	 */
 	private final boolean throwOnMissingLocations;
 
+	// Checker Framework: overridable methods are called while the object is under
+	// initialization
+	@SuppressWarnings("method.invocation")
 	public ClassPathScanner(Class<I> implementedInterface, ClassLoader classLoader, Charset encoding, Location location,
 			ResourceNameCache resourceNameCache, LocationScannerCache locationScannerCache,
 			boolean throwOnMissingLocations) {
@@ -104,7 +109,7 @@ public class ClassPathScanner<I> implements ResourceAndClassScanner<I> {
 				catch (Throwable e) {
 					Throwable rootCause = ExceptionUtils.getRootCause(e);
 					LOG.warn("Skipping " + Callback.class + ": " + ClassUtils.formatThrowable(e)
-							+ (rootCause == e ? "" : " caused by " + ClassUtils.formatThrowable(rootCause) + " at "
+							+ (rootCause.equals(e) ? "" : " caused by " + ClassUtils.formatThrowable(rootCause) + " at "
 									+ ExceptionUtils.getThrowLocation(rootCause)));
 					clazz = null;
 				}
@@ -127,11 +132,12 @@ public class ClassPathScanner<I> implements ResourceAndClassScanner<I> {
 	}
 
 	private Set<Pair<String, String>> findResourceNamesAndParentURLs() {
-		Set<Pair<String, String>> resourceNamesAndParentURLs = new TreeSet<>();
+		Set<Pair<String, String>> resourceNamesAndParentURLs = new TreeSet<>(
+				Comparator.comparing(Pair<String, String>::getLeft).thenComparing(Pair::getRight));
 		List<URL> locationUrls = getLocationUrlsForPath(location);
 		for (URL locationUrl : locationUrls) {
 			LOG.debug("Scanning URL: " + locationUrl.toExternalForm());
-			UrlResolver urlResolver = createUrlResolver(locationUrl.getProtocol());
+			UrlResolver urlResolver = createUrlResolver();
 			URL resolvedUrl = urlResolver.toStandardJavaUrl(locationUrl);
 			String protocol = resolvedUrl.getProtocol();
 			ClassPathLocationScanner classPathLocationScanner = createLocationScanner(protocol);
@@ -165,8 +171,7 @@ public class ClassPathScanner<I> implements ResourceAndClassScanner<I> {
 		// method above and we need to revert to Jar file walking.
 		boolean isClassPathRoot = location.isClassPath() && "".equals(location.getRootPath());
 		if (!locationResolved || isClassPathRoot) {
-			if (classLoader instanceof URLClassLoader) {
-				URLClassLoader urlClassLoader = (URLClassLoader) classLoader;
+			if (classLoader instanceof URLClassLoader urlClassLoader) {
 				for (URL url : urlClassLoader.getURLs()) {
 					if ("file".equals(url.getProtocol()) && url.getPath().endsWith(".jar")
 							&& !url.getPath().matches(".*" + Pattern.quote("/jre/lib/") + ".*")) {
@@ -201,6 +206,7 @@ public class ClassPathScanner<I> implements ResourceAndClassScanner<I> {
 								jarFile.close();
 							}
 							catch (IOException e) {
+								LOG.debug("Unable to close " + jarFile.getName() + ": " + e.getMessage());
 							}
 						}
 					}
@@ -248,10 +254,9 @@ public class ClassPathScanner<I> implements ResourceAndClassScanner<I> {
 
 	/**
 	 * Creates an appropriate URL resolver scanner for this url protocol.
-	 * @param protocol The protocol of the location url to scan.
 	 * @return The url resolver for this protocol.
 	 */
-	private UrlResolver createUrlResolver(String protocol) {
+	private UrlResolver createUrlResolver() {
 		return new DefaultUrlResolver();
 	}
 
@@ -260,21 +265,19 @@ public class ClassPathScanner<I> implements ResourceAndClassScanner<I> {
 	 * @param protocol The protocol of the location url to scan.
 	 * @return The location scanner or {@code null} if it could not be created.
 	 */
-	private ClassPathLocationScanner createLocationScanner(String protocol) {
+	private @Nullable ClassPathLocationScanner createLocationScanner(String protocol) {
 		if (locationScannerCache.containsKey(protocol)) {
 			return locationScannerCache.get(protocol);
 		}
 		if ("file".equals(protocol)) {
 			FileSystemClassPathLocationScanner locationScanner = new FileSystemClassPathLocationScanner();
 			locationScannerCache.put(protocol, locationScanner);
-			resourceNameCache.put(locationScanner, new HashMap<>());
 			return locationScanner;
 		}
 		if ("jar".equals(protocol) || isTomcat(protocol) || isWebLogic(protocol) || isWebSphere(protocol)) {
 			String separator = isTomcat(protocol) ? "*/" : "!/";
 			ClassPathLocationScanner locationScanner = new JarFileClassPathLocationScanner(separator);
 			locationScannerCache.put(protocol, locationScanner);
-			resourceNameCache.put(locationScanner, new HashMap<>());
 			return locationScanner;
 		}
 		return null;

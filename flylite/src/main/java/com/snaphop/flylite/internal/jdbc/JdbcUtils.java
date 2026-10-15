@@ -16,6 +16,8 @@
  */
 package com.snaphop.flylite.internal.jdbc;
 
+import org.jspecify.annotations.Nullable;
+
 import com.snaphop.flylite.internal.logging.Log;
 import com.snaphop.flylite.api.FlyliteException;
 import com.snaphop.flylite.internal.database.DatabaseTypeRegister;
@@ -53,7 +55,7 @@ public class JdbcUtils {
 				}
 				Throwable rootCause = ExceptionUtils.getRootCause(e);
 				String message = "Connection error: " + e.getMessage();
-				if (rootCause != null && rootCause != e && rootCause.getMessage() != null) {
+				if (rootCause != null && !rootCause.equals(e) && rootCause.getMessage() != null) {
 					message += "\n(Caused by " + rootCause.getMessage() + ")";
 				}
 				LOG.warn(message + "\nRetrying in " + backoffStrategy.peek() + " sec...");
@@ -78,7 +80,7 @@ public class JdbcUtils {
 	/**
 	 * Safely closes this Connection. This method never fails.
 	 */
-	public static void closeConnection(Connection connection) {
+	public static void closeConnection(@Nullable Connection connection) {
 		if (connection == null) {
 			return;
 		}
@@ -95,7 +97,7 @@ public class JdbcUtils {
 	/**
 	 * Safely closes this Statement. This method never fails.
 	 */
-	public static void closeStatement(Statement statement) {
+	public static void closeStatement(@Nullable Statement statement) {
 		if (statement == null) {
 			return;
 		}
@@ -110,7 +112,7 @@ public class JdbcUtils {
 	/**
 	 * Safely closes this ResultSet. This method never fails.
 	 */
-	public static void closeResultSet(ResultSet resultSet) {
+	public static void closeResultSet(@Nullable ResultSet resultSet) {
 		if (resultSet == null) {
 			return;
 		}
@@ -137,6 +139,7 @@ public class JdbcUtils {
 	}
 
 	/**
+	 * Returns the name of the database product. Example: Oracle, MySQL, ...
 	 * @return The name of the database product. Example: Oracle, MySQL, ...
 	 */
 	public static String getDatabaseProductName(DatabaseMetaData databaseMetaData) {
@@ -154,6 +157,7 @@ public class JdbcUtils {
 	}
 
 	/**
+	 * Returns the version of the database product. Example: MariaDB 10.3, ...
 	 * @return The version of the database product. Example: MariaDB 10.3, ...
 	 */
 

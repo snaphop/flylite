@@ -16,6 +16,8 @@
  */
 package com.snaphop.flylite.internal.jdbc;
 
+import org.jspecify.annotations.Nullable;
+
 import com.snaphop.flylite.internal.logging.Log;
 import com.snaphop.flylite.api.FlyliteException;
 import com.snaphop.flylite.api.configuration.Configuration;
@@ -42,8 +44,6 @@ public class JdbcConnectionFactory implements Closeable {
 
 	private final int connectRetriesInterval;
 
-	private final Configuration configuration;
-
 	private final DatabaseType databaseType;
 
 	private final String jdbcUrl;
@@ -52,9 +52,9 @@ public class JdbcConnectionFactory implements Closeable {
 
 	private final String productName;
 
-	private Connection firstConnection;
+	private @Nullable Connection firstConnection;
 
-	private ConnectionInitializer connectionInitializer;
+	private @Nullable ConnectionInitializer connectionInitializer;
 
 	/**
 	 * Creates a new JDBC connection factory. This automatically opens a first connection
@@ -67,10 +67,10 @@ public class JdbcConnectionFactory implements Closeable {
 		this.dataSource = dataSource;
 		this.connectRetries = configuration.getConnectRetries();
 		this.connectRetriesInterval = configuration.getConnectRetriesInterval();
-		this.configuration = configuration;
-		firstConnection = JdbcUtils.openConnection(dataSource, connectRetries, connectRetriesInterval);
-		this.databaseType = DatabaseTypeRegister.getDatabaseTypeForConnection(firstConnection);
-		final DatabaseMetaData databaseMetaData = JdbcUtils.getDatabaseMetaData(firstConnection);
+		Connection first = JdbcUtils.openConnection(dataSource, connectRetries, connectRetriesInterval);
+		this.firstConnection = first;
+		this.databaseType = DatabaseTypeRegister.getDatabaseTypeForConnection(first);
+		final DatabaseMetaData databaseMetaData = JdbcUtils.getDatabaseMetaData(first);
 		this.jdbcUrl = getJdbcUrl(databaseMetaData);
 		this.driverInfo = getDriverInfo(databaseMetaData);
 		this.productName = JdbcUtils.getDatabaseProductName(databaseMetaData);
@@ -81,20 +81,23 @@ public class JdbcConnectionFactory implements Closeable {
 	}
 
 	public Connection openConnection() throws FlyliteException {
-		Connection connection = firstConnection == null
-				? JdbcUtils.openConnection(dataSource, connectRetries, connectRetriesInterval) : firstConnection;
+		Connection first = firstConnection;
+		Connection connection = first == null
+				? JdbcUtils.openConnection(dataSource, connectRetries, connectRetriesInterval) : first;
 		firstConnection = null;
-		if (connectionInitializer != null) {
-			connectionInitializer.initialize(this, connection);
+		ConnectionInitializer initializer = connectionInitializer;
+		if (initializer != null) {
+			initializer.initialize(this, connection);
 		}
 		return connection;
 	}
 
 	@Override
 	public void close() {
-		if (firstConnection != null) {
+		Connection first = firstConnection;
+		if (first != null) {
 			try {
-				firstConnection.close();
+				first.close();
 			}
 			catch (Exception e) {
 				LOG.error("Error while closing connection: " + e.getMessage(), e);

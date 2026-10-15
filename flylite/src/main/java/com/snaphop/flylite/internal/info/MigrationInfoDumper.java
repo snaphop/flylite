@@ -16,6 +16,8 @@
  */
 package com.snaphop.flylite.internal.info;
 
+import org.jspecify.annotations.Nullable;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -39,10 +41,11 @@ public final class MigrationInfoDumper {
 	 */
 	public static String dumpToAsciiTable(MigrationInfo[] migrationInfos) {
 		List<String> columns = List.of("Category", "Version", "Description", "Type", "Installed On", "State");
-		List<List<String>> rows = new ArrayList<>();
+		List<List<@Nullable String>> rows = new ArrayList<>();
 		for (MigrationInfo migrationInfo : migrationInfos) {
-			rows.add(List.of(getCategory(migrationInfo), getVersionStr(migrationInfo), migrationInfo.getDescription(),
-					migrationInfo.getType().name(), DateUtils.formatDateAsIsoString(migrationInfo.getInstalledOn()),
+			rows.add(List.<@Nullable String>of(getCategory(migrationInfo), getVersionStr(migrationInfo),
+					migrationInfo.getDescription(), migrationInfo.getType().name(),
+					DateUtils.formatDateAsIsoString(migrationInfo.getInstalledOn()),
 					migrationInfo.getState().getDisplayName()));
 		}
 		return new AsciiTable(columns, rows, true, "", "No migrations found").render();

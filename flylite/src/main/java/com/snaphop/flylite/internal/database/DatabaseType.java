@@ -188,23 +188,4 @@ public abstract sealed class DatabaseType permits PostgreSQLDatabaseType, SQLite
 	public void setDefaultConnectionProps(Properties props) {
 	}
 
-	/**
-	 * Runs {@code SELECT version()}.
-	 * @param connection jdbc connection.
-	 * @return version output or empty string.
-	 */
-	public static String getSelectVersionOutput(Connection connection) {
-		try (PreparedStatement statement = connection.prepareStatement("SELECT version()");
-				ResultSet resultSet = statement.executeQuery()) {
-			if (resultSet.next()) {
-				@Nullable String result = resultSet.getString(1);
-				return result == null ? "" : result;
-			}
-			return "";
-		}
-		catch (SQLException e) {
-			return "";
-		}
-	}
-
 }

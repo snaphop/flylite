@@ -22,16 +22,19 @@ package com.snaphop.flylite.internal.jdbc;
 public interface Warning {
 
 	/**
+	 * Returns the warning code.
 	 * @return The warning code.
 	 */
 	int getCode();
 
 	/**
+	 * Returns the warning state.
 	 * @return The warning state.
 	 */
 	String getState();
 
 	/**
+	 * Returns the warning message.
 	 * @return The warning message.
 	 */
 	String getMessage();

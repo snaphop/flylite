@@ -16,6 +16,8 @@
  */
 package com.snaphop.flylite.api.output;
 
+import org.jspecify.annotations.Nullable;
+
 import java.util.List;
 
 /**
@@ -26,7 +28,7 @@ public final class InfoResult extends OperationResultBase {
 	/**
 	 * The current schema version.
 	 */
-	public String schemaVersion;
+	public @Nullable String schemaVersion;
 
 	/**
 	 * Comma separated configured schemas.
@@ -43,7 +45,7 @@ public final class InfoResult extends OperationResultBase {
 	 */
 	public boolean allSchemasEmpty;
 
-	public InfoResult(String flyliteVersion, String database, String schemaVersion, String schemaName,
+	public InfoResult(String flyliteVersion, String database, @Nullable String schemaVersion, String schemaName,
 			List<InfoOutput> migrations, boolean allSchemasEmpty) {
 		super(flyliteVersion, database, "info");
 		this.schemaVersion = schemaVersion;

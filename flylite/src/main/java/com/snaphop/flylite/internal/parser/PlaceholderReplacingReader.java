@@ -23,7 +23,10 @@ import java.io.FilterReader;
 import java.io.IOException;
 import java.io.Reader;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
+
+import org.jspecify.annotations.Nullable;
 
 public class PlaceholderReplacingReader extends FilterReader {
 
@@ -31,51 +34,28 @@ public class PlaceholderReplacingReader extends FilterReader {
 
 	private final String suffix;
 
-	private final CaseInsensitiveMap placeholders = new CaseInsensitiveMap();
+	/**
+	 * Placeholders by lower case name.
+	 */
+	private final Map<String, String> placeholders = new HashMap<>();
 
 	private final StringBuilder buffer = new StringBuilder();
 
-	private String markBuffer;
+	private String markBuffer = "";
 
-	private String replacement;
+	private @Nullable String replacement;
 
 	private int replacementPos;
 
-	private String markReplacement;
+	private @Nullable String markReplacement;
 
 	private int markReplacementPos;
-
-	private static class CaseInsensitiveMap extends HashMap<String, String> {
-
-		@Override
-		public void putAll(Map<? extends String, ? extends String> m) {
-			for (Map.Entry<? extends String, ? extends String> e : m.entrySet()) {
-				put(e.getKey(), e.getValue());
-			}
-		}
-
-		@Override
-		public String put(String key, String value) {
-			return super.put(key.toLowerCase(), value);
-		}
-
-		@Override
-		public String get(Object key) {
-			return super.get(key.toString().toLowerCase());
-		}
-
-		@Override
-		public boolean containsKey(Object key) {
-			return super.containsKey(key.toString().toLowerCase());
-		}
-
-	}
 
 	public PlaceholderReplacingReader(String prefix, String suffix, Map<String, String> placeholders, Reader in) {
 		super(in);
 		this.prefix = prefix;
 		this.suffix = suffix;
-		this.placeholders.putAll(placeholders);
+		placeholders.forEach((k, v) -> this.placeholders.put(k.toLowerCase(Locale.ROOT), v));
 	}
 
 	public static PlaceholderReplacingReader create(Configuration configuration, ParsingContext parsingContext,
@@ -89,19 +69,6 @@ public class PlaceholderReplacingReader extends FilterReader {
 
 		return new PlaceholderReplacingReader(configuration.getPlaceholderPrefix(),
 				configuration.getPlaceholderSuffix(), placeholders, reader);
-	}
-
-	public static PlaceholderReplacingReader createForScriptMigration(Configuration configuration,
-			ParsingContext parsingContext, Reader reader) {
-		Map<String, String> placeholders = new HashMap<>();
-		Map<String, String> configurationPlaceholders = configuration.getPlaceholders();
-		Map<String, String> parsingContextPlaceholders = parsingContext.getPlaceholders();
-
-		placeholders.putAll(configurationPlaceholders);
-		placeholders.putAll(parsingContextPlaceholders);
-
-		return new PlaceholderReplacingReader(configuration.getScriptPlaceholderPrefix(),
-				configuration.getScriptPlaceholderSuffix(), placeholders, reader);
 	}
 
 	@Override
@@ -161,7 +128,7 @@ public class PlaceholderReplacingReader extends FilterReader {
 
 			// look up the placeholder string
 			String placeholder = placeholderBuilder.toString();
-			if (!placeholders.containsKey(placeholder)) {
+			if (!placeholders.containsKey(placeholder.toLowerCase(Locale.ROOT))) {
 				String canonicalPlaceholder = prefix + placeholder + suffix;
 
 				if (placeholder.contains("flyway:")) {
@@ -174,18 +141,20 @@ public class PlaceholderReplacingReader extends FilterReader {
 			}
 
 			// set the current placeholder replacement
-			replacement = placeholders.get(placeholder);
+			String value = placeholders.get(placeholder.toLowerCase(Locale.ROOT));
 
 			// Empty placeholder value -> move to the next character
-			if (replacement == null || replacement.length() == 0) {
+			if (value == null || value.isEmpty()) {
 				replacement = null;
 				return read();
 			}
+			replacement = value;
 		}
 
-		int result = replacement.charAt(replacementPos);
+		String current = replacement;
+		int result = current.charAt(replacementPos);
 		replacementPos++;
-		if (replacementPos >= replacement.length()) {
+		if (replacementPos >= current.length()) {
 			replacement = null;
 			replacementPos = 0;
 		}

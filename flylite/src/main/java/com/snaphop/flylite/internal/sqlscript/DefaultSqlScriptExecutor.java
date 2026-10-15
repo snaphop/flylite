@@ -16,6 +16,8 @@
  */
 package com.snaphop.flylite.internal.sqlscript;
 
+import org.jspecify.annotations.Nullable;
+
 import com.snaphop.flylite.internal.logging.Log;
 import com.snaphop.flylite.api.callback.Event;
 import com.snaphop.flylite.internal.jdbc.Warning;
@@ -23,9 +25,7 @@ import com.snaphop.flylite.internal.jdbc.JdbcTemplate;
 import com.snaphop.flylite.internal.jdbc.Result;
 import com.snaphop.flylite.internal.jdbc.Results;
 import com.snaphop.flylite.internal.util.AsciiTable;
-import java.sql.Statement;
-import java.util.ArrayList;
-import java.util.Collections;
+import java.sql.SQLException;
 import java.util.List;
 
 public class DefaultSqlScriptExecutor implements SqlScriptExecutor {
@@ -57,18 +57,17 @@ public class DefaultSqlScriptExecutor implements SqlScriptExecutor {
 	protected void executeStatement(JdbcTemplate jdbcTemplate, SqlScript sqlScript, SqlStatement sqlStatement) {
 		logStatementExecution(sqlStatement);
 		Results results = sqlStatement.execute(jdbcTemplate);
-		if (results.getException() != null) {
-			printWarnings(results);
-			handleException(results, sqlScript, sqlStatement);
-			return;
-		}
 		printWarnings(results);
+		SQLException exception = results.getException();
+		if (exception != null) {
+			throw new FlyliteSqlScriptException(sqlScript.getResource(), sqlStatement, exception);
+		}
 		handleResults(results);
 	}
 
 	protected void handleResults(Results results) {
 		for (Result result : results.getResults()) {
-			long updateCount = result.getUpdateCount();
+			long updateCount = result.updateCount();
 			if (updateCount != -1) {
 				handleUpdateCount(updateCount);
 			}
@@ -77,17 +76,15 @@ public class DefaultSqlScriptExecutor implements SqlScriptExecutor {
 	}
 
 	protected void outputQueryResult(Result result) {
-		if (result.getColumns() != null && !result.getColumns().isEmpty()) {
-			LOG.info(new AsciiTable(result.getColumns(), result.getData(), true, "", "No rows returned").render());
+		List<String> columns = result.columns();
+		List<List<@Nullable String>> data = result.data();
+		if (columns != null && data != null && !columns.isEmpty()) {
+			LOG.info(new AsciiTable(columns, data, true, "", "No rows returned").render());
 		}
 	}
 
 	private void handleUpdateCount(long updateCount) {
 		LOG.debug(updateCount + (updateCount == 1 ? " row" : " rows") + " affected");
-	}
-
-	protected void handleException(Results results, SqlScript sqlScript, SqlStatement sqlStatement) {
-		throw new FlyliteSqlScriptException(sqlScript.getResource(), sqlStatement, results.getException());
 	}
 
 	private void printWarnings(Results results) {

@@ -164,7 +164,9 @@ public class CleanExecutor {
 				try {
 					cleanSchema(schema);
 				}
-				catch (FlyliteException ignored) {
+				catch (FlyliteException e) {
+					// the schema is dropped afterwards anyway
+					LOG.debug("Unable to clean schema " + schema + " before dropping it: " + e.getMessage());
 				}
 			}
 			else {

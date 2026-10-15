@@ -16,20 +16,26 @@
  */
 package com.snaphop.flylite.internal.util;
 
+import org.jspecify.annotations.Nullable;
+
+import com.snaphop.flylite.internal.logging.Log;
+
 public class IOUtils {
 
 	/**
 	 * Closes this closeable and never fails while doing so.
 	 * @param closeable The closeable to close. Can be {@code null}.
 	 */
-	public static void close(AutoCloseable closeable) {
+	public static void close(@Nullable AutoCloseable closeable) {
 		if (closeable == null) {
 			return;
 		}
 		try {
 			closeable.close();
 		}
-		catch (Exception ignored) {
+		catch (Exception e) {
+			// closing is best effort
+			Log.of(IOUtils.class).debug("Unable to close " + closeable + ": " + e.getMessage());
 		}
 	}
 

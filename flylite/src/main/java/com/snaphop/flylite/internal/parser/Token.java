@@ -28,8 +28,6 @@ public class Token {
 
 	private final String text;
 
-	private final String rawText;
-
 	private final int parensDepth;
 
 	public Token(final TokenType type, final int pos, final int line, final int col, final String text,
@@ -39,7 +37,6 @@ public class Token {
 		this.line = line;
 		this.col = col;
 		this.text = text;
-		this.rawText = rawText;
 		this.parensDepth = parensDepth;
 	}
 
@@ -61,10 +58,6 @@ public class Token {
 
 	public String getText() {
 		return this.text;
-	}
-
-	public String getRawText() {
-		return this.rawText;
 	}
 
 	public int getParensDepth() {

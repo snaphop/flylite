@@ -106,10 +106,6 @@ public final class FluentConfiguration implements Configuration {
 
 	private String placeholderSeparator = ":";
 
-	private String scriptPlaceholderPrefix = "FP__";
-
-	private String scriptPlaceholderSuffix = "__";
-
 	private Map<String, String> placeholders = Map.of();
 
 	private MigrationVersion target = MigrationVersion.LATEST;
@@ -181,7 +177,8 @@ public final class FluentConfiguration implements Configuration {
 		if (context != null) {
 			return context;
 		}
-		return FluentConfiguration.class.getClassLoader();
+		return Objects.requireNonNullElse(FluentConfiguration.class.getClassLoader(),
+				ClassLoader.getSystemClassLoader());
 	}
 
 	/**
@@ -225,8 +222,6 @@ public final class FluentConfiguration implements Configuration {
 		this.placeholderPrefix = configuration.getPlaceholderPrefix();
 		this.placeholderSuffix = configuration.getPlaceholderSuffix();
 		this.placeholderSeparator = configuration.getPlaceholderSeparator();
-		this.scriptPlaceholderPrefix = configuration.getScriptPlaceholderPrefix();
-		this.scriptPlaceholderSuffix = configuration.getScriptPlaceholderSuffix();
 		this.placeholders = copyMap(configuration.getPlaceholders());
 		this.target = configuration.getTarget();
 		this.table = configuration.getTable();
@@ -393,16 +388,6 @@ public final class FluentConfiguration implements Configuration {
 	@Override
 	public String getPlaceholderSeparator() {
 		return placeholderSeparator;
-	}
-
-	@Override
-	public String getScriptPlaceholderSuffix() {
-		return scriptPlaceholderSuffix;
-	}
-
-	@Override
-	public String getScriptPlaceholderPrefix() {
-		return scriptPlaceholderPrefix;
 	}
 
 	@Override
@@ -810,32 +795,6 @@ public final class FluentConfiguration implements Configuration {
 			throw new FlyliteException("placeholderSeparator cannot be empty!", ErrorCode.CONFIGURATION);
 		}
 		this.placeholderSeparator = placeholderSeparator;
-		return this;
-	}
-
-	/**
-	 * Sets the script placeholder prefix.
-	 * @param scriptPlaceholderPrefix prefix, must not be empty.
-	 * @return this.
-	 */
-	public FluentConfiguration scriptPlaceholderPrefix(String scriptPlaceholderPrefix) {
-		if (scriptPlaceholderPrefix.isEmpty()) {
-			throw new FlyliteException("scriptPlaceholderPrefix cannot be empty!", ErrorCode.CONFIGURATION);
-		}
-		this.scriptPlaceholderPrefix = scriptPlaceholderPrefix;
-		return this;
-	}
-
-	/**
-	 * Sets the script placeholder suffix.
-	 * @param scriptPlaceholderSuffix suffix, must not be empty.
-	 * @return this.
-	 */
-	public FluentConfiguration scriptPlaceholderSuffix(String scriptPlaceholderSuffix) {
-		if (scriptPlaceholderSuffix.isEmpty()) {
-			throw new FlyliteException("scriptPlaceholderSuffix cannot be empty!", ErrorCode.CONFIGURATION);
-		}
-		this.scriptPlaceholderSuffix = scriptPlaceholderSuffix;
 		return this;
 	}
 

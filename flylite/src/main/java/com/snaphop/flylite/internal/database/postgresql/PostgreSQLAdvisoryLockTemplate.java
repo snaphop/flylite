@@ -16,6 +16,8 @@
  */
 package com.snaphop.flylite.internal.database.postgresql;
 
+import org.jspecify.annotations.Nullable;
+
 import com.snaphop.flylite.internal.logging.Log;
 import com.snaphop.flylite.api.FlyliteException;
 import com.snaphop.flylite.api.configuration.Configuration;
@@ -80,8 +82,8 @@ public class PostgreSQLAdvisoryLockTemplate {
 			throw new FlyliteSqlException("Unable to acquire PostgreSQL advisory lock", e);
 		}
 		catch (Exception e) {
-			if (e instanceof RuntimeException) {
-				throw (RuntimeException) e;
+			if (e instanceof RuntimeException re) {
+				throw re;
 			}
 			throw new FlyliteException(e);
 		}
@@ -106,7 +108,7 @@ public class PostgreSQLAdvisoryLockTemplate {
 		return results.size() == 1 && results.get(0);
 	}
 
-	private void unlock(RuntimeException rethrow) throws FlyliteSqlException {
+	private void unlock(@Nullable RuntimeException rethrow) throws FlyliteSqlException {
 		try {
 			boolean unlocked = jdbcTemplate.queryForBoolean("SELECT pg_advisory_unlock(" + lockNum + ")");
 			if (!unlocked) {

@@ -44,8 +44,6 @@
           <placeholderPrefix>${</placeholderPrefix>
           <placeholderSuffix>}</placeholderSuffix>
           <placeholderSeparator>:</placeholderSeparator>
-          <scriptPlaceholderPrefix>FP__</scriptPlaceholderPrefix>
-          <scriptPlaceholderSuffix>__</scriptPlaceholderSuffix>
           <skipDefaultCallbacks>false</skipDefaultCallbacks>
           <lockRetryCount>10</lockRetryCount>
           <failOnMissingLocations>true</failOnMissingLocations>

@@ -18,9 +18,6 @@
  * <p>
  * Start with {@link com.snaphop.flylite.Flylite#configure()}. Flylite logs with
  * {@link System.Logger} and has no required dependencies besides a JDBC driver.
- * <p>
- * {@code org.postgresql.jdbc} is only needed at runtime for {@code COPY ... FROM STDIN}
- * statements in PostgreSQL migrations.
  */
 module com.snaphop.flylite {
 	exports com.snaphop.flylite;
@@ -37,5 +34,4 @@ module com.snaphop.flylite {
 
 	requires transitive java.sql;
 	requires static org.jspecify;
-	requires static org.postgresql.jdbc;
 }

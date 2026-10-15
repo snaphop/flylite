@@ -16,6 +16,8 @@
  */
 package com.snaphop.flylite.internal.database.base;
 
+import org.jspecify.annotations.Nullable;
+
 import com.snaphop.flylite.internal.logging.Log;
 import com.snaphop.flylite.api.MigrationType;
 import com.snaphop.flylite.api.MigrationVersion;
@@ -59,21 +61,21 @@ public abstract class Database<C extends Connection<?>> implements Closeable {
 
 	protected JdbcTemplate jdbcTemplate;
 
-	private C migrationConnection;
+	private @Nullable C migrationConnection;
 
-	private C eventConnection;
+	private @Nullable C eventConnection;
 
-	private C mainConnection;
+	private @Nullable C mainConnection;
 
 	/**
 	 * The 'major.minor' version of this database.
 	 */
-	private MigrationVersion version;
+	private @Nullable MigrationVersion version;
 
 	/**
 	 * The user who applied the migrations.
 	 */
-	private String installedBy;
+	private @Nullable String installedBy;
 
 	public Database(Configuration configuration, JdbcConnectionFactory jdbcConnectionFactory) {
 		this.databaseType = jdbcConnectionFactory.getDatabaseType();
@@ -107,25 +109,22 @@ public abstract class Database<C extends Connection<?>> implements Closeable {
 	public abstract void ensureSupported();
 
 	/**
+	 * Returns the 'major.minor' version of this database.
 	 * @return The 'major.minor' version of this database.
 	 */
 	public final MigrationVersion getVersion() {
-		if (version == null) {
-			version = determineVersion();
+		MigrationVersion v = version;
+		if (v == null) {
+			v = determineVersion();
+			version = v;
 		}
-		return version;
+		return v;
 	}
 
 	protected final void ensureDatabaseIsRecentEnough(String oldestSupportedVersion) {
 		if (!getVersion().isAtLeast(oldestSupportedVersion)) {
 			throw new FlyliteDbUpgradeRequiredException(databaseType, computeVersionDisplayName(getVersion()),
 					computeVersionDisplayName(MigrationVersion.fromVersion(oldestSupportedVersion)));
-		}
-	}
-
-	protected final void recommendFlyliteUpgradeIfNecessary(String newestSupportedVersion) {
-		if (getVersion().isNewerThan(newestSupportedVersion)) {
-			recommendFlyliteUpgrade(newestSupportedVersion);
 		}
 	}
 
@@ -145,7 +144,7 @@ public abstract class Database<C extends Connection<?>> implements Closeable {
 	 * Compute the user-friendly display name for this database version.
 	 */
 	protected String computeVersionDisplayName(MigrationVersion version) {
-		return version.getVersion();
+		return version.toString();
 	}
 
 	public Delimiter getDefaultDelimiter() {
@@ -153,6 +152,7 @@ public abstract class Database<C extends Connection<?>> implements Closeable {
 	}
 
 	/**
+	 * Returns the name of the database, by default as determined by JDBC.
 	 * @return The name of the database, by default as determined by JDBC.
 	 */
 	public final String getCatalog() {
@@ -184,11 +184,13 @@ public abstract class Database<C extends Connection<?>> implements Closeable {
 	public abstract boolean supportsDdlTransactions();
 
 	/**
+	 * Returns the representation of the value {@code true} in a boolean column.
 	 * @return The representation of the value {@code true} in a boolean column.
 	 */
 	public abstract String getBooleanTrue();
 
 	/**
+	 * Returns the representation of the value {@code false} in a boolean column.
 	 * @return The representation of the value {@code false} in a boolean column.
 	 */
 	public abstract String getBooleanFalse();
@@ -242,12 +244,14 @@ public abstract class Database<C extends Connection<?>> implements Closeable {
 	}
 
 	/**
+	 * Returns {@code true} if this database uses a catalog to represent a schema, or
 	 * @return {@code true} if this database uses a catalog to represent a schema, or
 	 * {@code false} if a schema is simply a schema.
 	 */
 	public abstract boolean catalogIsSchema();
 
 	/**
+	 * Returns whether to use a single connection for both schema history table management
 	 * @return Whether to use a single connection for both schema history table management
 	 * and applying migrations.
 	 */
@@ -255,45 +259,45 @@ public abstract class Database<C extends Connection<?>> implements Closeable {
 		return false;
 	}
 
-	public DatabaseMetaData getJdbcMetaData() {
-		return jdbcMetaData;
-	}
-
 	/**
+	 * Returns the main connection used to manipulate the schema history.
 	 * @return The main connection used to manipulate the schema history.
 	 */
 	public final C getMainConnection() {
-		if (mainConnection == null) {
-			this.mainConnection = getConnection(rawMainJdbcConnection);
+		C c = mainConnection;
+		if (c == null) {
+			c = getConnection(rawMainJdbcConnection);
+			mainConnection = c;
 		}
-		return mainConnection;
+		return c;
 	}
 
 	/**
+	 * Returns the migration connection used to apply migrations.
 	 * @return The migration connection used to apply migrations.
 	 */
 	public final C getMigrationConnection() {
-		if (migrationConnection == null) {
-			if (useSingleConnection()) {
-				this.migrationConnection = getMainConnection();
-			}
-			else {
-				this.migrationConnection = getConnection(jdbcConnectionFactory.openConnection());
-			}
+		C c = migrationConnection;
+		if (c == null) {
+			c = useSingleConnection() ? getMainConnection() : getConnection(jdbcConnectionFactory.openConnection());
+			migrationConnection = c;
 		}
-		return migrationConnection;
+		return c;
 	}
 
 	/**
+	 * Returns the event connection used to handle event callbacks. The reason for
 	 * @return The event connection used to handle event callbacks. The reason for
 	 * creating an event connection is that if using the migration connection instead, it
 	 * may trigger an unwanted commit which breaks any ongoing migration transaction.
 	 */
 	public final C getEventConnection() {
-		if (!hasEventConnection()) {
-			eventConnection = getConnection(jdbcConnectionFactory.openConnection());
+		C c = eventConnection;
+		if (c == null) {
+			c = getConnection(jdbcConnectionFactory.openConnection());
+			eventConnection = c;
 		}
-		return eventConnection;
+		return c;
 	}
 
 	public final boolean hasEventConnection() {
@@ -305,13 +309,15 @@ public abstract class Database<C extends Connection<?>> implements Closeable {
 	 * connections.
 	 */
 	public void disposeEventConnection() {
-		if (hasEventConnection()) {
-			eventConnection.close();
+		C c = eventConnection;
+		if (c != null) {
+			c.close();
 			eventConnection = null;
 		}
 	}
 
 	/**
+	 * Returns the major and minor version of the database.
 	 * @return The major and minor version of the database.
 	 */
 	protected MigrationVersion determineVersion() {
@@ -360,23 +366,27 @@ public abstract class Database<C extends Connection<?>> implements Closeable {
 	}
 
 	public final String getInstalledBy() {
-		if (installedBy == null) {
-			installedBy = configuration.getInstalledBy() == null ? getCurrentUser() : configuration.getInstalledBy();
+		String by = installedBy;
+		if (by == null) {
+			String configured = configuration.getInstalledBy();
+			by = configured == null ? getCurrentUser() : configured;
+			installedBy = by;
 		}
-		return installedBy;
+		return by;
 	}
 
+	@Override
 	public void close() {
-		if (!useSingleConnection() && migrationConnection != null) {
-			migrationConnection.close();
+		C migration = migrationConnection;
+		if (!useSingleConnection() && migration != null) {
+			migration.close();
 		}
-		if (mainConnection != null) {
-			mainConnection.close();
+		C main = mainConnection;
+		if (main != null) {
+			main.close();
 		}
 		disposeEventConnection();
-		if (rawMainJdbcConnection != null) {
-			JdbcUtils.closeConnection(rawMainJdbcConnection);
-		}
+		JdbcUtils.closeConnection(rawMainJdbcConnection);
 	}
 
 	public DatabaseType getDatabaseType() {

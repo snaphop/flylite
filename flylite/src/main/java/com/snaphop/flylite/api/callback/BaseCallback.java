@@ -39,6 +39,8 @@ public abstract class BaseCallback implements Callback {
 		return true;
 	}
 
+	// String.split drops trailing empty strings, which is relied upon here
+	@SuppressWarnings("StringSplitter")
 	@Override
 	public String getCallbackName() {
 		String name = this.getClass().getSimpleName();

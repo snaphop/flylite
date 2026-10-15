@@ -16,6 +16,8 @@
  */
 package com.snaphop.flylite.api.callback;
 
+import org.jspecify.annotations.Nullable;
+
 /**
  * The Flyway lifecycle events that can be handled in callbacks.
  */
@@ -186,8 +188,7 @@ public enum Event {
 	BEFORE_CONNECT("beforeConnect");
 
 	/**
-	 * @return The id of an event. Examples: {@code beforeClean},
-	 * {@code afterEachMigrate}, ...
+	 * The id of an event. Examples: {@code beforeClean}, {@code afterEachMigrate}, ...
 	 */
 	private final String id;
 
@@ -204,7 +205,7 @@ public enum Event {
 	 * @param id The id.
 	 * @return The event. {@code null} if not found.
 	 */
-	public static Event fromId(String id) {
+	public static @Nullable Event fromId(String id) {
 		for (Event event : values()) {
 			if (event.id.equals(id)) {
 				return event;

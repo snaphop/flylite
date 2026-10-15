@@ -16,6 +16,7 @@
  */
 package com.snaphop.flylite.internal.parser;
 
+import org.jspecify.annotations.Nullable;
 import com.snaphop.flylite.internal.logging.Log;
 import com.snaphop.flylite.api.FlyliteException;
 import com.snaphop.flylite.api.configuration.Configuration;
@@ -49,10 +50,13 @@ public abstract class Parser {
 
 	private final char alternativeStringLiteralQuote;
 
-	private final Set<String> validKeywords;
+	private final @Nullable Set<String> validKeywords;
 
 	public final ParsingContext parsingContext;
 
+	// Checker Framework: overridable methods are called while the object is under
+	// initialization
+	@SuppressWarnings("method.invocation")
 	protected Parser(Configuration configuration, ParsingContext parsingContext, int peekDepth) {
 		this.configuration = configuration;
 		this.peekDepth = peekDepth;
@@ -87,7 +91,7 @@ public abstract class Parser {
 		return 0;
 	}
 
-	protected Set<String> getValidKeywords() {
+	protected @Nullable Set<String> getValidKeywords() {
 		return null;
 	}
 
@@ -105,7 +109,7 @@ public abstract class Parser {
 	 * @param metadata The resource's metadata.
 	 * @return The statements.
 	 */
-	public final SqlStatementIterator parse(LoadableResource resource, SqlScriptMetadata metadata) {
+	public final SqlStatementIterator parse(LoadableResource resource, @Nullable SqlScriptMetadata metadata) {
 		PositionTracker tracker = new PositionTracker();
 		Recorder recorder = new Recorder();
 		ParserContext context = new ParserContext(getDefaultDelimiter());
@@ -129,14 +133,14 @@ public abstract class Parser {
 	 * @param metadata The resource's metadata.
 	 * @return The new reader with placeholder replacement.
 	 */
-	protected Reader replacePlaceholders(Reader reader, SqlScriptMetadata metadata) {
+	protected Reader replacePlaceholders(Reader reader, @Nullable SqlScriptMetadata metadata) {
 		if (configuration.isPlaceholderReplacement() && (metadata == null || metadata.placeholderReplacement())) {
 			return PlaceholderReplacingReader.create(configuration, parsingContext, reader);
 		}
 		return reader;
 	}
 
-	protected SqlStatement getNextStatement(Resource resource, PeekingReader reader, Recorder recorder,
+	protected @Nullable SqlStatement getNextStatement(Resource resource, PeekingReader reader, Recorder recorder,
 			PositionTracker tracker, ParserContext context) {
 		resetDelimiter(context);
 		context.setStatementType(StatementType.UNKNOWN);
@@ -151,7 +155,7 @@ public abstract class Parser {
 			int nonCommentPartLine = -1;
 			int nonCommentPartCol = -1;
 			StatementType statementType = StatementType.UNKNOWN;
-			Boolean canExecuteInTransaction = null;
+			@Nullable Boolean canExecuteInTransaction = null;
 			String simplifiedStatement = "";
 			do {
 				Token token = readToken(reader, tracker, context);
@@ -205,16 +209,16 @@ public abstract class Parser {
 							&& (sql.trim().isEmpty() || tokens.isEmpty() || nonCommentPartPos < 0)) {
 						return null;
 					}
-					if (canExecuteInTransaction == null) {
-						canExecuteInTransaction = determineCanExecuteInTransaction(simplifiedStatement, keywords, true);
-					}
+					boolean executeInTransaction = canExecuteInTransaction != null ? canExecuteInTransaction
+							: Objects.requireNonNullElse(
+									determineCanExecuteInTransaction(simplifiedStatement, keywords, true), true);
 					if (TokenType.EOF == tokenType && (parensDepth > 0 || blockDepth > 0)) {
 						throw new FlyliteException(
 								"Incomplete statement at line " + statementLine + " col " + statementCol + ": " + sql);
 					}
 					return createStatement(reader, recorder, statementPos, statementLine, statementCol,
 							nonCommentPartPos, nonCommentPartLine, nonCommentPartCol, statementType,
-							canExecuteInTransaction, context.getDelimiter(), sql.trim());
+							executeInTransaction, context.getDelimiter(), sql.trim());
 				}
 				if (tokens.isEmpty() || tokens.stream()
 					.allMatch(t -> t.getType() == TokenType.BLANK_LINES || t.getType() == TokenType.COMMENT)) {
@@ -235,12 +239,12 @@ public abstract class Parser {
 				}
 				if (keywords.size() <= getTransactionalDetectionCutoff()
 						&& (tokenType == TokenType.KEYWORD || "@".equals(token.getText())) && parensDepth == 0
-						&& (statementType == StatementType.UNKNOWN || canExecuteInTransaction == null)) {
+						&& (StatementType.UNKNOWN.equals(statementType) || canExecuteInTransaction == null)) {
 					if (!simplifiedStatement.isEmpty()) {
 						simplifiedStatement += " ";
 					}
 					simplifiedStatement += token.getText().toUpperCase(Locale.ENGLISH);
-					if (statementType == StatementType.UNKNOWN) {
+					if (StatementType.UNKNOWN.equals(statementType)) {
 						if (keywords.size() > getTransactionalDetectionCutoff()) {
 							statementType = StatementType.GENERIC;
 						}
@@ -293,6 +297,7 @@ public abstract class Parser {
 	}
 
 	/**
+	 * Returns the cutoff point in terms of number of tokens after which a statement can
 	 * @return The cutoff point in terms of number of tokens after which a statement can
 	 * no longer be non-transactional.
 	 */
@@ -318,7 +323,7 @@ public abstract class Parser {
 		return -1;
 	}
 
-	protected static Token getPreviousToken(List<Token> tokens, int parensDepth) {
+	protected static @Nullable Token getPreviousToken(List<Token> tokens, int parensDepth) {
 		for (int i = tokens.size() - 1; i >= 0; i--) {
 			Token previousToken = tokens.get(i);
 			// Only consider tokens at the same parenthesis depth
@@ -342,40 +347,6 @@ public abstract class Parser {
 		return tokenText.equals(previousToken.getText());
 	}
 
-	protected static boolean lastTokenIsOnLine(List<Token> tokens, int parensDepth, int line) {
-		Token previousToken = getPreviousToken(tokens, parensDepth);
-		if (previousToken == null) {
-			return false;
-		}
-		return previousToken.getLine() == line;
-	}
-
-	protected static boolean tokenAtIndexIs(List<Token> tokens, int index, String tokenText) {
-		return tokens.get(index).getText().equals(tokenText);
-	}
-
-	protected boolean doTokensMatchPattern(List<Token> previousTokens, Token current, Pattern regex) {
-		ArrayList<String> tokenStrings = new ArrayList<>();
-		tokenStrings.add(current.getText());
-		for (int i = previousTokens.size() - 1; i >= 0; i--) {
-			Token prevToken = previousTokens.get(i);
-			if (prevToken.getParensDepth() != current.getParensDepth()) {
-				break;
-			}
-			if (prevToken.getType() == TokenType.KEYWORD) {
-				tokenStrings.add(prevToken.getText());
-			}
-		}
-		StringBuilder builder = new StringBuilder();
-		for (int i = tokenStrings.size() - 1; i >= 0; i--) {
-			builder.append(tokenStrings.get(i));
-			if (i != 0) {
-				builder.append(" ");
-			}
-		}
-		return regex.matcher(builder.toString()).matches();
-	}
-
 	protected ParsedSqlStatement createStatement(PeekingReader reader, Recorder recorder, int statementPos,
 			int statementLine, int statementCol, int nonCommentPartPos, int nonCommentPartLine, int nonCommentPartCol,
 			StatementType statementType, boolean canExecuteInTransaction, Delimiter delimiter, String sql)
@@ -389,8 +360,8 @@ public abstract class Parser {
 		return StatementType.UNKNOWN;
 	}
 
-	private Boolean determineCanExecuteInTransaction(String simplifiedStatement, List<Token> keywords,
-			Boolean defaultValue) {
+	private @Nullable Boolean determineCanExecuteInTransaction(String simplifiedStatement, List<Token> keywords,
+			@Nullable Boolean defaultValue) {
 		if (keywords.size() > getTransactionalDetectionCutoff()) {
 			return true;
 		}
@@ -403,7 +374,7 @@ public abstract class Parser {
 		}
 	}
 
-	protected Boolean detectCanExecuteInTransaction(String simplifiedStatement, List<Token> keywords) {
+	protected @Nullable Boolean detectCanExecuteInTransaction(String simplifiedStatement, List<Token> keywords) {
 		return true;
 	}
 
@@ -411,14 +382,15 @@ public abstract class Parser {
 		return false;
 	}
 
-	private Token readToken(PeekingReader reader, PositionTracker tracker, ParserContext context) throws IOException {
+	private @Nullable Token readToken(PeekingReader reader, PositionTracker tracker, ParserContext context)
+			throws IOException {
 		int pos = tracker.getPos();
 		int line = tracker.getLine();
 		int col = tracker.getCol();
 		int colIgnoringWhitepace = tracker.getColIgnoringWhitespace();
 		String peek = reader.peek(peekDepth);
 		if (peek == null) {
-			return new Token(TokenType.EOF, pos, line, col, null, null, 0);
+			return new Token(TokenType.EOF, pos, line, col, "", "", 0);
 		}
 		char c = peek.charAt(0);
 		if (isAlternativeStringLiteral(peek)) {
@@ -462,12 +434,12 @@ public abstract class Parser {
 		if (peek.startsWith("B\'") || peek.startsWith("E\'") || peek.startsWith("X\'")) {
 			reader.swallow(2);
 			reader.swallowUntilIncludingWithEscape('\'', true, '\\');
-			return new Token(TokenType.STRING, pos, line, col, null, null, context.getParensDepth());
+			return new Token(TokenType.STRING, pos, line, col, "", "", context.getParensDepth());
 		}
 		if (peek.startsWith("U&\'")) {
 			reader.swallow(3);
 			reader.swallowUntilIncludingWithEscape('\'', true);
-			return new Token(TokenType.STRING, pos, line, col, null, null, context.getParensDepth());
+			return new Token(TokenType.STRING, pos, line, col, "", "", context.getParensDepth());
 		}
 		if (isDelimiter(peek, context, col, colIgnoringWhitepace)) {
 			return handleDelimiter(reader, context, pos, line, col);
@@ -576,23 +548,12 @@ public abstract class Parser {
 		return result;
 	}
 
-	private List<Token> discardBlankLines(List<Token> tokens) {
-		List<Token> nonBlankLinesTokens = new ArrayList<>(tokens);
-		while (nonBlankLinesTokens.get(0).getType() == TokenType.BLANK_LINES) {
-			nonBlankLinesTokens.remove(0);
-		}
-		while (nonBlankLinesTokens.get(nonBlankLinesTokens.size() - 1).getType() == TokenType.BLANK_LINES) {
-			nonBlankLinesTokens.remove(nonBlankLinesTokens.size() - 1);
-		}
-		return nonBlankLinesTokens;
-	}
-
 	protected boolean isCommentDirective(String peek) {
 		return false;
 	}
 
-	protected Token handleCommentDirective(PeekingReader reader, ParserContext context, int pos, int line, int col)
-			throws IOException {
+	protected @Nullable Token handleCommentDirective(PeekingReader reader, ParserContext context, int pos, int line,
+			int col) throws IOException {
 		return null;
 	}
 
@@ -619,11 +580,11 @@ public abstract class Parser {
 			throws IOException {
 		reader.swallow();
 		reader.swallowUntilIncludingWithEscape('\'', true);
-		return new Token(TokenType.STRING, pos, line, col, null, null, context.getParensDepth());
+		return new Token(TokenType.STRING, pos, line, col, "", "", context.getParensDepth());
 	}
 
-	protected Token handleAlternativeStringLiteral(PeekingReader reader, ParserContext context, int pos, int line,
-			int col) throws IOException {
+	protected @Nullable Token handleAlternativeStringLiteral(PeekingReader reader, ParserContext context, int pos,
+			int line, int col) throws IOException {
 		return null;
 	}
 
@@ -661,7 +622,7 @@ public abstract class Parser {
 
 		private final ParserContext context;
 
-		private SqlStatement nextStatement;
+		private @Nullable SqlStatement nextStatement;
 
 		public ParserSqlStatementIterator(PeekingReader peekingReader, LoadableResource resource, Recorder recorder,
 				PositionTracker tracker, ParserContext context) {

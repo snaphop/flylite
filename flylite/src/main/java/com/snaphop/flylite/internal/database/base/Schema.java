@@ -16,6 +16,8 @@
  */
 package com.snaphop.flylite.internal.database.base;
 
+import org.jspecify.annotations.Nullable;
+
 import com.snaphop.flylite.internal.logging.Log;
 import com.snaphop.flylite.internal.exception.FlyliteSqlException;
 import com.snaphop.flylite.internal.jdbc.JdbcTemplate;
@@ -154,66 +156,12 @@ public abstract class Schema<D extends Database<?>, T extends Table<?, ?>> {
 	protected abstract T[] doAllTables() throws SQLException;
 
 	/**
-	 * Retrieves all the types in this schema.
-	 */
-	protected final Type<?, ?>[] allTypes() {
-		ResultSet resultSet = null;
-		try {
-			resultSet = database.jdbcMetaData.getUDTs(null, name, null, null);
-			List<Type<?, ?>> types = new ArrayList<>();
-			while (resultSet.next()) {
-				types.add(getType(resultSet.getString("TYPE_NAME")));
-			}
-			return types.toArray(new Type<?, ?>[0]);
-		}
-		catch (SQLException e) {
-			throw new FlyliteSqlException("Unable to retrieve all types in schema " + this, e);
-		}
-		finally {
-			JdbcUtils.closeResultSet(resultSet);
-		}
-	}
-
-	/**
-	 * Retrieves the type with this name in this schema.
-	 */
-	protected Type<?, ?> getType(String typeName) {
-		return null;
-	}
-
-	/**
 	 * Retrieves the table with this name in this schema.
 	 */
 	public abstract Table<?, ?> getTable(String tableName);
 
 	/**
-	 * Retrieves the function with this name in this schema.
-	 */
-	public Function<?, ?> getFunction(String functionName, String... args) {
-		throw new UnsupportedOperationException("getFunction()");
-	}
-
-	/**
-	 * Retrieves all the functions in this schema.
-	 */
-	protected final Function<?, ?>[] allFunctions() {
-		try {
-			return doAllFunctions();
-		}
-		catch (SQLException e) {
-			throw new FlyliteSqlException("Unable to retrieve all functions in schema " + this, e);
-		}
-	}
-
-	/**
-	 * Retrieves all the functions in this schema.
-	 * @throws SQLException when the retrieval failed.
-	 */
-	protected Function<?, ?>[] doAllFunctions() throws SQLException {
-		return new Function<?, ?>[0];
-	}
-
-	/**
+	 * Returns the quoted name of this schema.
 	 * @return The quoted name of this schema.
 	 */
 	@Override
@@ -222,14 +170,13 @@ public abstract class Schema<D extends Database<?>, T extends Table<?, ?>> {
 	}
 
 	@Override
-	public boolean equals(Object o) {
+	public boolean equals(@Nullable Object o) {
 		if (this == o) {
 			return true;
 		}
-		if (o == null || getClass() != o.getClass()) {
+		if (!(o instanceof Schema<?, ?> schema)) {
 			return false;
 		}
-		Schema<?, ?> schema = (Schema<?, ?>) o;
 		return name.equals(schema.name);
 	}
 

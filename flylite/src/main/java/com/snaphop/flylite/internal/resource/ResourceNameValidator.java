@@ -42,10 +42,6 @@ public class ResourceNameValidator {
 		for (Resource resource : getAllSqlResources(provider, configuration)) {
 			String filename = resource.getFilename();
 			LOG.debug("Validating " + filename);
-			// Filter out special purpose files that the parser will not identify.
-			if (isSpecialResourceFile(configuration, filename)) {
-				continue;
-			}
 			ResourceName result = resourceNameParser.parse(filename);
 			if (!result.isValid()) {
 				errorsFound.add(result.getValidityMessage());
@@ -67,10 +63,6 @@ public class ResourceNameValidator {
 
 	private Collection<LoadableResource> getAllSqlResources(ResourceProvider provider, Configuration configuration) {
 		return provider.getResources("", configuration.getSqlMigrationSuffixes());
-	}
-
-	private boolean isSpecialResourceFile(Configuration configuration, String filename) {
-		return false;
 	}
 
 }

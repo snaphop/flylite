@@ -16,14 +16,17 @@
  */
 package com.snaphop.flylite.internal.parser;
 
+import org.jspecify.annotations.Nullable;
+
 import com.snaphop.flylite.internal.logging.Log;
 import com.snaphop.flylite.api.FlyliteException;
 import com.snaphop.flylite.api.configuration.Configuration;
 import com.snaphop.flylite.internal.database.base.Database;
 import com.snaphop.flylite.internal.database.base.Schema;
 import com.snaphop.flylite.internal.resource.ResourceName;
-import java.text.SimpleDateFormat;
-import java.util.Date;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -48,7 +51,7 @@ public class ParsingContext {
 
 	private final Map<String, String> placeholders = new HashMap<>();
 
-	private Database<?> database;
+	private @Nullable Database<?> database;
 
 	private String generateName(String name, Configuration configuration) {
 		return "flyway" + configuration.getPlaceholderSeparator() + name;
@@ -67,7 +70,7 @@ public class ParsingContext {
 				defaultSchemaName = schemaNames.get(0);
 			}
 			else {
-				defaultSchemaName = currentSchema.getName();
+				defaultSchemaName = currentSchema == null ? null : currentSchema.getName();
 			}
 		}
 		if (defaultSchemaName != null) {
@@ -76,10 +79,15 @@ public class ParsingContext {
 		if (catalog != null) {
 			placeholders.put(generateName(DATABASE_PLACEHOLDER, configuration), catalog);
 		}
-		placeholders.put(generateName(USER_PLACEHOLDER, configuration), currentUser);
+		if (currentUser != null) {
+			placeholders.put(generateName(USER_PLACEHOLDER, configuration), currentUser);
+		}
 		placeholders.put(generateName(TIMESTAMP_PLACEHOLDER, configuration),
-				new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date()));
-		placeholders.put(generateName(WORKING_DIRECTORY_PLACEHOLDER, configuration), System.getProperty("user.dir"));
+				LocalDateTime.now(ZoneId.systemDefault()).format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+		String workingDirectory = System.getProperty("user.dir");
+		if (workingDirectory != null) {
+			placeholders.put(generateName(WORKING_DIRECTORY_PLACEHOLDER, configuration), workingDirectory);
+		}
 		placeholders.put(generateName(TABLE_PLACEHOLDER, configuration), configuration.getTable());
 	}
 
@@ -93,7 +101,7 @@ public class ParsingContext {
 		}
 	}
 
-	private Schema<?, ?> getCurrentSchema(Database<?> database) {
+	private @Nullable Schema<?, ?> getCurrentSchema(Database<?> database) {
 		try {
 			return database.getMainConnection().getCurrentSchema();
 		}
@@ -103,7 +111,7 @@ public class ParsingContext {
 		}
 	}
 
-	private String getCurrentUser(Database<?> database) {
+	private @Nullable String getCurrentUser(Database<?> database) {
 		try {
 			return database.getCurrentUser();
 		}
@@ -117,7 +125,7 @@ public class ParsingContext {
 		return this.placeholders;
 	}
 
-	public Database<?> getDatabase() {
+	public @Nullable Database<?> getDatabase() {
 		return this.database;
 	}
 

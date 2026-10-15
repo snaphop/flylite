@@ -83,6 +83,7 @@ public class FileSystemResource extends LoadableResource {
 	}
 
 	/**
+	 * Returns the filename of this resource, without the path.
 	 * @return The filename of this resource, without the path.
 	 */
 	@Override

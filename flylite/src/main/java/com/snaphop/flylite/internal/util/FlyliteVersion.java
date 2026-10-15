@@ -29,7 +29,8 @@ public final class FlyliteVersion {
 	 * @return version.
 	 */
 	public static String getVersion() {
-		String v = FlyliteVersion.class.getPackage().getImplementationVersion();
+		Package p = FlyliteVersion.class.getPackage();
+		String v = p == null ? null : p.getImplementationVersion();
 		return v == null ? "unknown" : v;
 	}
 

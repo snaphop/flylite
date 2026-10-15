@@ -30,8 +30,6 @@ class Statement {
 
 	private final String sql;
 
-	private final List<Token> tokens;
-
 	Statement(final int pos, final int line, final int col, final StatementType statementType, final String sql,
 			final List<Token> tokens) {
 		this.pos = pos;
@@ -39,7 +37,6 @@ class Statement {
 		this.col = col;
 		this.statementType = statementType;
 		this.sql = sql;
-		this.tokens = tokens;
 	}
 
 	public int getPos() {
@@ -60,10 +57,6 @@ class Statement {
 
 	public String getSql() {
 		return this.sql;
-	}
-
-	public List<Token> getTokens() {
-		return this.tokens;
 	}
 
 }

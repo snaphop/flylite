@@ -38,13 +38,10 @@ public final class JavaMigrationResolver implements MigrationResolver {
 
 	private final ClassProvider<JavaMigration> classProvider;
 
-	private final Configuration configuration;
-
-	private JavaMigrationResolver(Collection<JavaMigration> javaMigrations, ClassProvider<JavaMigration> classProvider,
-			Configuration configuration) {
+	private JavaMigrationResolver(Collection<JavaMigration> javaMigrations,
+			ClassProvider<JavaMigration> classProvider) {
 		this.javaMigrations = javaMigrations;
 		this.classProvider = classProvider;
-		this.configuration = configuration;
 	}
 
 	/**
@@ -53,18 +50,16 @@ public final class JavaMigrationResolver implements MigrationResolver {
 	 * @return resolver.
 	 */
 	public static JavaMigrationResolver fixed(Configuration configuration) {
-		return new JavaMigrationResolver(configuration.getJavaMigrations(), List::of, configuration);
+		return new JavaMigrationResolver(configuration.getJavaMigrations(), List::of);
 	}
 
 	/**
 	 * Resolves java migrations found by scanning.
 	 * @param classProvider scanned classes.
-	 * @param configuration config.
 	 * @return resolver.
 	 */
-	public static JavaMigrationResolver scanning(ClassProvider<JavaMigration> classProvider,
-			Configuration configuration) {
-		return new JavaMigrationResolver(List.of(), classProvider, configuration);
+	public static JavaMigrationResolver scanning(ClassProvider<JavaMigration> classProvider) {
+		return new JavaMigrationResolver(List.of(), classProvider);
 	}
 
 	@Override
@@ -74,7 +69,7 @@ public final class JavaMigrationResolver implements MigrationResolver {
 			migrations.add(resolve(javaMigration));
 		}
 		for (Class<? extends JavaMigration> clazz : classProvider.getClasses()) {
-			JavaMigration javaMigration = ClassUtils.instantiate(clazz.getName(), configuration.getClassLoader());
+			JavaMigration javaMigration = ClassUtils.instantiate(clazz);
 			migrations.add(resolve(javaMigration));
 		}
 		migrations.sort(new ResolvedMigrationComparator());

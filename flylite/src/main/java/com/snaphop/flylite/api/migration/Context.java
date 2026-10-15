@@ -26,11 +26,13 @@ import java.sql.Connection;
 public interface Context {
 
 	/**
+	 * Returns the configuration currently in use.
 	 * @return The configuration currently in use.
 	 */
 	Configuration getConfiguration();
 
 	/**
+	 * Returns the JDBC connection being used. Transaction are managed by Flylite. When
 	 * @return The JDBC connection being used. Transaction are managed by Flylite. When
 	 * the context is passed to the migrate method, a transaction will already have been
 	 * started if required and will be automatically committed or rolled back afterwards,

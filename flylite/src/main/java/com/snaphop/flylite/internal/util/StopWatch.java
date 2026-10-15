@@ -40,6 +40,7 @@ public class StopWatch {
 	}
 
 	/**
+	 * Returns the total run time in millis of the stop watch between start and stop
 	 * @return The total run time in millis of the stop watch between start and stop
 	 * calls.
 	 */

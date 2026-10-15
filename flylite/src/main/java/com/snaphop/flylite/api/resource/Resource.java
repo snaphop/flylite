@@ -22,23 +22,27 @@ package com.snaphop.flylite.api.resource;
 public interface Resource {
 
 	/**
+	 * Returns the absolute path and filename of the resource on the classpath or
 	 * @return The absolute path and filename of the resource on the classpath or
 	 * filesystem (path and filename).
 	 */
 	String getAbsolutePath();
 
 	/**
+	 * Returns the absolute path and filename of this resource on disk, regardless of
 	 * @return The absolute path and filename of this resource on disk, regardless of
 	 * whether this resources points at the classpath or filesystem.
 	 */
 	String getAbsolutePathOnDisk();
 
 	/**
+	 * Returns the filename of this resource, without the path.
 	 * @return The filename of this resource, without the path.
 	 */
 	String getFilename();
 
 	/**
+	 * Returns the filename of this resource, as well as the path relative to the location
 	 * @return The filename of this resource, as well as the path relative to the location
 	 * where the resource was loaded from.
 	 */

@@ -16,10 +16,11 @@
  */
 package com.snaphop.flylite.internal.schemahistory;
 
+import org.jspecify.annotations.Nullable;
+
 import com.snaphop.flylite.internal.logging.Log;
 import com.snaphop.flylite.api.FlyliteException;
 import com.snaphop.flylite.api.MigrationVersion;
-import com.snaphop.flylite.api.configuration.Configuration;
 import com.snaphop.flylite.internal.command.CommandResultFactory;
 import com.snaphop.flylite.api.output.RepairResult;
 import com.snaphop.flylite.api.resolver.ResolvedMigration;
@@ -35,11 +36,10 @@ import com.snaphop.flylite.internal.jdbc.JdbcTemplate;
 import com.snaphop.flylite.internal.sqlscript.SqlScriptExecutorFactory;
 import com.snaphop.flylite.internal.sqlscript.SqlScriptFactory;
 import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
-import java.sql.Timestamp;
 import java.text.MessageFormat;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.Callable;
 
 /**
@@ -68,9 +68,7 @@ class JdbcTableSchemaHistory extends SchemaHistory {
 	/**
 	 * Applied migration cache.
 	 */
-	private final LinkedList<AppliedMigration> cache = new LinkedList<>();
-
-	private final Configuration configuration;
+	private final List<AppliedMigration> cache = new ArrayList<>();
 
 	/**
 	 * Creates a new instance of the schema history table support.
@@ -78,14 +76,13 @@ class JdbcTableSchemaHistory extends SchemaHistory {
 	 * @param table The schema history table used by Flylite.
 	 */
 	JdbcTableSchemaHistory(SqlScriptExecutorFactory sqlScriptExecutorFactory, SqlScriptFactory sqlScriptFactory,
-			Database<?> database, Table<?, ?> table, Configuration configuration) {
+			Database<?> database, Table<?, ?> table) {
+		super(table);
 		this.sqlScriptExecutorFactory = sqlScriptExecutorFactory;
 		this.sqlScriptFactory = sqlScriptFactory;
-		this.table = table;
 		this.database = database;
 		this.connection = database.getMainConnection();
 		this.jdbcTemplate = connection.getJdbcTemplate();
-		this.configuration = configuration;
 	}
 
 	@Override
@@ -101,43 +98,37 @@ class JdbcTableSchemaHistory extends SchemaHistory {
 
 	@Override
 	public void create(final boolean baseline) {
-		connection.lock(table, new Callable<Object>() {
-			@Override
-			public Object call() {
-				int retries = 0;
-				while (!exists()) {
-					if (retries == 0) {
-						LOG.info(
-								"Creating Schema History table " + table + (baseline ? " with baseline" : "") + " ...");
+		connection.lock(table, () -> {
+			int retries = 0;
+			while (!exists()) {
+				if (retries == 0) {
+					LOG.info("Creating Schema History table " + table + (baseline ? " with baseline" : "") + " ...");
+				}
+				try {
+					ExecutionTemplateFactory.createExecutionTemplate(connection.getJdbcConnection(), database)
+						.execute(() -> {
+							sqlScriptExecutorFactory.createSqlScriptExecutor(connection.getJdbcConnection())
+								.execute(database.getCreateScript(sqlScriptFactory, table, baseline));
+							LOG.debug("Created Schema History table " + table + (baseline ? " with baseline" : ""));
+							return null;
+						});
+				}
+				catch (FlyliteException e) {
+					if (++retries >= 10) {
+						throw e;
 					}
 					try {
-						ExecutionTemplateFactory.createExecutionTemplate(connection.getJdbcConnection(), database)
-							.execute(new Callable<Object>() {
-								@Override
-								public Object call() {
-									sqlScriptExecutorFactory.createSqlScriptExecutor(connection.getJdbcConnection())
-										.execute(database.getCreateScript(sqlScriptFactory, table, baseline));
-									LOG.debug("Created Schema History table " + table
-											+ (baseline ? " with baseline" : ""));
-									return null;
-								}
-							});
+						LOG.debug("Schema History table creation failed. Retrying in 1 sec ...");
+						Thread.sleep(1000);
 					}
-					catch (FlyliteException e) {
-						if (++retries >= 10) {
-							throw e;
-						}
-						try {
-							LOG.debug("Schema History table creation failed. Retrying in 1 sec ...");
-							Thread.sleep(1000);
-						}
-						catch (InterruptedException e1) {
-						}
+					catch (InterruptedException e1) {
+						Thread.currentThread().interrupt();
+						throw new FlyliteException("Interrupted while creating the schema history table", e1);
 					}
-					// Ignore
 				}
-				return null;
+				// Ignore
 			}
+			return null;
 		});
 	}
 
@@ -148,8 +139,8 @@ class JdbcTableSchemaHistory extends SchemaHistory {
 	}
 
 	@Override
-	protected void doAddAppliedMigration(int installedRank, MigrationVersion version, String description,
-			MigrationType type, String script, Integer checksum, int executionTime, boolean success) {
+	protected void doAddAppliedMigration(int installedRank, @Nullable MigrationVersion version, String description,
+			MigrationType type, String script, @Nullable Integer checksum, int executionTime, boolean success) {
 		boolean tableIsLocked = false;
 		connection.restoreOriginalState();
 		// Lock again for databases with no clean DDL transactions like Oracle
@@ -192,31 +183,20 @@ class JdbcTableSchemaHistory extends SchemaHistory {
 	}
 
 	private void refreshCache() {
-		int maxCachedInstalledRank = cache.isEmpty() ? -1 : cache.getLast().getInstalledRank();
+		int maxCachedInstalledRank = cache.isEmpty() ? -1 : cache.get(cache.size() - 1).getInstalledRank();
 		String query = database.getSelectStatement(table);
 		try {
 			cache.addAll(jdbcTemplate.query(query, rs -> {
-				// Construct a map of lower-cased column names to ordinals. This is useful
-				// for databases that
-				// upper-case them - e.g. Snowflake with QUOTED-IDENTIFIERS-IGNORE-CASE
-				// turned on
-				HashMap<String, Integer> columnOrdinalMap = constructColumnOrdinalMap(rs);
-				Integer checksum = rs.getInt(columnOrdinalMap.get("checksum"));
+				Integer checksum = rs.getInt("checksum");
 				if (rs.wasNull()) {
 					checksum = null;
 				}
-				int installedRank = rs.getInt(columnOrdinalMap.get("installed_rank"));
-				MigrationVersion version = rs.getString(columnOrdinalMap.get("version")) != null
-						? MigrationVersion.fromVersion(rs.getString(columnOrdinalMap.get("version"))) : null;
-				String description = rs.getString(columnOrdinalMap.get("description"));
-				String type = rs.getString(columnOrdinalMap.get("type"));
-				String script = rs.getString(columnOrdinalMap.get("script"));
-				Timestamp installedOn = rs.getTimestamp(columnOrdinalMap.get("installed_on"));
-				String installedBy = rs.getString(columnOrdinalMap.get("installed_by"));
-				int executionTime = rs.getInt(columnOrdinalMap.get("execution_time"));
-				boolean success = rs.getBoolean(columnOrdinalMap.get("success"));
-				return new AppliedMigration(installedRank, version, description, MigrationType.fromString(type), script,
-						checksum, installedOn, installedBy, executionTime, success);
+				String version = rs.getString("version");
+				return new AppliedMigration(rs.getInt("installed_rank"),
+						version == null ? null : MigrationVersion.fromVersion(version), notNull(rs, "description"),
+						MigrationType.fromString(notNull(rs, "type")), notNull(rs, "script"), checksum,
+						rs.getTimestamp("installed_on"), rs.getString("installed_by"), rs.getInt("execution_time"),
+						rs.getBoolean("success"));
 			}, maxCachedInstalledRank));
 		}
 		catch (SQLException e) {
@@ -225,15 +205,12 @@ class JdbcTableSchemaHistory extends SchemaHistory {
 		}
 	}
 
-	private HashMap<String, Integer> constructColumnOrdinalMap(ResultSet rs) throws SQLException {
-		HashMap<String, Integer> columnOrdinalMap = new HashMap<>();
-		ResultSetMetaData metadata = rs.getMetaData();
-		for (int i = 1; i <= metadata.getColumnCount(); i++) {
-			// Careful - column ordinals in JDBC start at 1
-			String columnNameLower = metadata.getColumnName(i).toLowerCase();
-			columnOrdinalMap.put(columnNameLower, i);
+	private static String notNull(ResultSet rs, String column) throws SQLException {
+		String value = rs.getString(column);
+		if (value == null) {
+			throw new SQLException("Unexpected null " + column + " in schema history table");
 		}
-		return columnOrdinalMap;
+		return value;
 	}
 
 	@Override

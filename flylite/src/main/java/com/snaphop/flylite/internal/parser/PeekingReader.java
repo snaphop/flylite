@@ -16,6 +16,7 @@
  */
 package com.snaphop.flylite.internal.parser;
 
+import org.jspecify.annotations.Nullable;
 import com.snaphop.flylite.internal.sqlscript.Delimiter;
 
 import java.io.FilterReader;
@@ -147,10 +148,6 @@ public class PeekingReader extends FilterReader {
 				|| context.isLetter((char) r));
 	}
 
-	public boolean peekIgnoreCase(String str) throws IOException {
-		return str.equalsIgnoreCase(peek(str.length()));
-	}
-
 	/**
 	 * Peek ahead in the stream to see if the next characters match this string exactly.
 	 * @param str The string to match.
@@ -165,7 +162,7 @@ public class PeekingReader extends FilterReader {
 	 * @param numChars The number of characters.
 	 * @return The characters.
 	 */
-	public String peek(int numChars) throws IOException {
+	public @Nullable String peek(int numChars) throws IOException {
 		return peek(numChars, false);
 	}
 
@@ -175,7 +172,7 @@ public class PeekingReader extends FilterReader {
 	 * @param peekMultipleLines Whether the peek should go across lines or not
 	 * @return The characters.
 	 */
-	public String peek(int numChars, boolean peekMultipleLines) throws IOException {
+	public @Nullable String peek(int numChars, boolean peekMultipleLines) throws IOException {
 		// If we need to peek beyond the physical size of the peek buffer - eg. we have
 		// encountered a very
 		// long string literal - then expand the buffer to be big enough to contain it.

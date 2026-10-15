@@ -16,16 +16,19 @@
  */
 package com.snaphop.flylite.internal.parser;
 
+/**
+ * Records the characters of the statement being parsed.
+ */
 public class Recorder {
 
-	private StringBuilder recorder;
+	private StringBuilder recorder = new StringBuilder();
 
-	private boolean recorderPaused = false;
+	private boolean running = false;
 
 	private int recorderConfirmedPos = 0;
 
 	public void record(char c) {
-		if (isRunning()) {
+		if (running) {
 			recorder.append(c);
 		}
 	}
@@ -34,24 +37,10 @@ public class Recorder {
 		return recorder.length();
 	}
 
-	public void truncate(int length) {
-		if (isRunning()) {
-			recorder.delete(length, recorder.length());
-		}
-	}
-
-	private boolean isRunning() {
-		return recorder != null && !recorderPaused;
-	}
-
 	public void start() {
 		recorder = new StringBuilder();
 		recorderConfirmedPos = 0;
-		recorderPaused = false;
-	}
-
-	public void pause() {
-		recorderPaused = true;
+		running = true;
 	}
 
 	public void record(String str) {
@@ -66,9 +55,9 @@ public class Recorder {
 	public String stop() {
 		// Drop unconfirmed parts of recording
 		recorder.delete(recorderConfirmedPos, recorder.length());
-
 		String result = recorder.toString();
-		recorder = null;
+		recorder = new StringBuilder();
+		running = false;
 		return result;
 	}
 

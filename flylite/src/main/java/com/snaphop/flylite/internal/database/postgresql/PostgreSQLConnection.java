@@ -34,7 +34,7 @@ public class PostgreSQLConnection extends Connection<PostgreSQLDatabase> {
 		super(database, connection);
 
 		try {
-			originalRole = jdbcTemplate.queryForString("SELECT CURRENT_USER");
+			originalRole = jdbcTemplate.queryForNonNullString("SELECT CURRENT_USER");
 		}
 		catch (SQLException e) {
 			throw new FlyliteSqlException("Unable to determine current user", e);
@@ -57,14 +57,12 @@ public class PostgreSQLConnection extends Connection<PostgreSQLDatabase> {
 					+ "Set the current schema in currentSchema parameter of the JDBC URL or in Flylite's schemas property.");
 		}
 
-		String schema = StringUtils.hasText(currentSchema) ? currentSchema : searchPath;
-
-		return getSchema(schema);
+		return getSchema(currentSchema != null && StringUtils.hasText(currentSchema) ? currentSchema : searchPath);
 	}
 
 	@Override
 	protected String getCurrentSchemaNameOrSearchPath() throws SQLException {
-		return jdbcTemplate.queryForString("SHOW search_path");
+		return jdbcTemplate.queryForNonNullString("SHOW search_path");
 	}
 
 	@Override

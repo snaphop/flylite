@@ -21,6 +21,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
 
+import org.jspecify.annotations.Nullable;
+
 public final class MigrationVersion implements Comparable<MigrationVersion> {
 
 	/**
@@ -50,6 +52,8 @@ public final class MigrationVersion implements Comparable<MigrationVersion> {
 	 */
 	private static final Pattern SPLIT_REGEX = Pattern.compile("\\.(?=\\d)");
 
+	private static final String LATEST_VERSION_NUMBER = Long.toString(Long.MAX_VALUE);
+
 	/**
 	 * The individual parts this version string is composed of. Ex. 1.2.3.4.0 -> [1, 2, 3,
 	 * 4, 0]
@@ -73,19 +77,18 @@ public final class MigrationVersion implements Comparable<MigrationVersion> {
 	 * the database.
 	 * @return The MigrationVersion
 	 */
-	@SuppressWarnings("ConstantConditions")
-	public static MigrationVersion fromVersion(String version) {
+	public static MigrationVersion fromVersion(@Nullable String version) {
+		if (version == null) {
+			return EMPTY;
+		}
 		if ("current".equalsIgnoreCase(version)) {
 			return CURRENT;
 		}
 		if ("next".equalsIgnoreCase(version)) {
 			return NEXT;
 		}
-		if ("latest".equalsIgnoreCase(version) || LATEST.getVersion().equals(version)) {
+		if ("latest".equalsIgnoreCase(version) || LATEST_VERSION_NUMBER.equals(version)) {
 			return LATEST;
-		}
-		if (version == null) {
-			return EMPTY;
 		}
 		return new MigrationVersion(version);
 	}
@@ -109,9 +112,8 @@ public final class MigrationVersion implements Comparable<MigrationVersion> {
 	 * {@code null} means that this version refers to an empty schema.
 	 * @param displayText The alternative text to display instead of the version number.
 	 */
-	private MigrationVersion(BigInteger version, String displayText) {
-		this.versionParts = new ArrayList<>();
-		this.versionParts.add(version);
+	private MigrationVersion(@Nullable BigInteger version, String displayText) {
+		this.versionParts = version == null ? List.of() : List.of(version);
 		this.displayText = displayText;
 		this.rawVersion = displayText;
 	}
@@ -122,19 +124,20 @@ public final class MigrationVersion implements Comparable<MigrationVersion> {
 	}
 
 	/**
+	 * Returns numeric version as String
 	 * @return Numeric version as String
 	 */
-	public String getVersion() {
+	public @Nullable String getVersion() {
 		if (this.equals(EMPTY)) {
 			return null;
 		}
 		if (this.equals(LATEST)) {
-			return Long.toString(Long.MAX_VALUE);
+			return LATEST_VERSION_NUMBER;
 		}
 		return displayText;
 	}
 
-	public String getName() {
+	public @Nullable String getName() {
 		if (this.equals(EMPTY)) {
 			return null;
 		}
@@ -151,7 +154,7 @@ public final class MigrationVersion implements Comparable<MigrationVersion> {
 	}
 
 	@Override
-	public boolean equals(Object o) {
+	public boolean equals(@Nullable Object o) {
 		if (this == o) {
 			return true;
 		}
@@ -164,7 +167,7 @@ public final class MigrationVersion implements Comparable<MigrationVersion> {
 
 	@Override
 	public int hashCode() {
-		return versionParts == null ? 0 : versionParts.hashCode();
+		return versionParts.hashCode();
 	}
 
 	/**
@@ -199,6 +202,7 @@ public final class MigrationVersion implements Comparable<MigrationVersion> {
 	}
 
 	/**
+	 * Returns the major version.
 	 * @return The major version.
 	 */
 	public BigInteger getMajor() {
@@ -206,6 +210,7 @@ public final class MigrationVersion implements Comparable<MigrationVersion> {
 	}
 
 	/**
+	 * Returns the major version as a string.
 	 * @return The major version as a string.
 	 */
 	public String getMajorAsString() {
@@ -213,6 +218,7 @@ public final class MigrationVersion implements Comparable<MigrationVersion> {
 	}
 
 	/**
+	 * Returns the minor version as a string.
 	 * @return The minor version as a string.
 	 */
 	public String getMinorAsString() {
@@ -223,7 +229,7 @@ public final class MigrationVersion implements Comparable<MigrationVersion> {
 	}
 
 	@Override
-	public int compareTo(MigrationVersion o) {
+	public int compareTo(@Nullable MigrationVersion o) {
 		if (o == null) {
 			return 1;
 		}
@@ -276,7 +282,9 @@ public final class MigrationVersion implements Comparable<MigrationVersion> {
 	 * @param versionStr The string to split.
 	 * @return The resulting array.
 	 */
-	private List<BigInteger> tokenize(String versionStr) {
+	// String.split drops trailing empty strings, which is relied upon here
+	@SuppressWarnings("StringSplitter")
+	private static List<BigInteger> tokenize(String versionStr) {
 		List<BigInteger> parts = new ArrayList<>();
 		for (String part : SPLIT_REGEX.split(versionStr)) {
 			parts.add(toBigInteger(versionStr, part));
@@ -290,7 +298,7 @@ public final class MigrationVersion implements Comparable<MigrationVersion> {
 		return parts;
 	}
 
-	private BigInteger toBigInteger(String versionStr, String part) {
+	private static BigInteger toBigInteger(String versionStr, String part) {
 		try {
 			return new BigInteger(part);
 		}

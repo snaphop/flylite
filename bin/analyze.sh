@@ -27,7 +27,7 @@ for profile in $_profiles; do
   echo ""
   echo "--------------------- Running $profile -----------------------"
   echo ""
-  ./mvnw $MAVEN_CLI_OPTS clean install -pl "${_modules}" -am -P${profile} -DskipTests -Dinvoker.skip -Dmaven.javadoc.skip
+  ./mvnw $MAVEN_CLI_OPTS clean install -pl "${_modules}" -am -P${profile},-format-validate -DskipTests -Dinvoker.skip -Dmaven.javadoc.skip
 done
 
 # Checker or the maven compiler leaves these files around

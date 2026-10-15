@@ -18,9 +18,9 @@ package com.snaphop.flylite.internal.util;
 
 import com.snaphop.flylite.api.FlyliteException;
 import java.io.File;
-import java.io.UnsupportedEncodingException;
 import java.net.URL;
 import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 
 /**
  * Collection of utility methods for working with URLs.
@@ -46,12 +46,7 @@ public class UrlUtils {
 	 * @return The decoded URL.
 	 */
 	public static String decodeURL(String url) {
-		try {
-			return URLDecoder.decode(url, "UTF-8");
-		}
-		catch (UnsupportedEncodingException e) {
-			throw new IllegalStateException("Can never happen", e);
-		}
+		return URLDecoder.decode(url, StandardCharsets.UTF_8);
 	}
 
 	private UrlUtils() {

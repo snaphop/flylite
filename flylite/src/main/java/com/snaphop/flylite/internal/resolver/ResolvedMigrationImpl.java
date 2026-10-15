@@ -16,6 +16,8 @@
  */
 package com.snaphop.flylite.internal.resolver;
 
+import org.jspecify.annotations.Nullable;
+
 import com.snaphop.flylite.api.MigrationVersion;
 import com.snaphop.flylite.api.executor.MigrationExecutor;
 import com.snaphop.flylite.api.resolver.ResolvedMigration;
@@ -38,22 +40,23 @@ public class ResolvedMigrationImpl implements ResolvedMigration {
 	 * same as the checksum. For repeatable migrations, it is the checksum calculated
 	 * prior to placeholder replacement.
 	 */
-	private final Integer equivalentChecksum;
+	private final @Nullable Integer equivalentChecksum;
 
-	private final Integer checksum;
+	private final @Nullable Integer checksum;
 
-	private final MigrationVersion version;
+	private final @Nullable MigrationVersion version;
 
 	private final String description;
 
 	private final MigrationType type;
 
-	private final String physicalLocation;
+	private final @Nullable String physicalLocation;
 
 	private final MigrationExecutor executor;
 
-	public ResolvedMigrationImpl(MigrationVersion version, String description, String script, Integer checksum,
-			Integer equivalentChecksum, MigrationType type, String physicalLocation, MigrationExecutor executor) {
+	public ResolvedMigrationImpl(@Nullable MigrationVersion version, String description, String script,
+			@Nullable Integer checksum, @Nullable Integer equivalentChecksum, MigrationType type,
+			@Nullable String physicalLocation, MigrationExecutor executor) {
 		this.version = version;
 		this.description = description;
 		this.script = script;
@@ -68,24 +71,19 @@ public class ResolvedMigrationImpl implements ResolvedMigration {
 	}
 
 	@Override
-	public Integer getChecksum() {
+	public @Nullable Integer getChecksum() {
 		return checksum == null ? equivalentChecksum : checksum;
-	}
-
-	public int compareTo(ResolvedMigrationImpl o) {
-		return version.compareTo(o.version);
 	}
 
 	@SuppressWarnings("SimplifiableIfStatement")
 	@Override
-	public boolean equals(Object o) {
+	public boolean equals(@Nullable Object o) {
 		if (this == o) {
 			return true;
 		}
-		if (o == null || getClass() != o.getClass()) {
+		if (!(o instanceof ResolvedMigrationImpl migration)) {
 			return false;
 		}
-		ResolvedMigrationImpl migration = (ResolvedMigrationImpl) o;
 		if (checksum != null ? !checksum.equals(migration.checksum) : migration.checksum != null) {
 			return false;
 		}
@@ -124,13 +122,13 @@ public class ResolvedMigrationImpl implements ResolvedMigration {
 	}
 
 	@Override
-	public boolean checksumMatches(Integer checksum) {
+	public boolean checksumMatches(@Nullable Integer checksum) {
 		return Objects.equals(checksum, this.checksum)
 				|| (Objects.equals(checksum, this.equivalentChecksum) && this.equivalentChecksum != null);
 	}
 
 	@Override
-	public boolean checksumMatchesWithoutBeingIdentical(Integer checksum) {
+	public boolean checksumMatchesWithoutBeingIdentical(@Nullable Integer checksum) {
 		// The checksum in the database matches the one calculated without replacement,
 		// but not the one with.
 		// That is, the script has placeholders and the checksum was originally calculated
@@ -148,7 +146,7 @@ public class ResolvedMigrationImpl implements ResolvedMigration {
 	}
 
 	@Override
-	public MigrationVersion getVersion() {
+	public @Nullable MigrationVersion getVersion() {
 		return this.version;
 	}
 
@@ -163,7 +161,7 @@ public class ResolvedMigrationImpl implements ResolvedMigration {
 	}
 
 	@Override
-	public String getPhysicalLocation() {
+	public @Nullable String getPhysicalLocation() {
 		return this.physicalLocation;
 	}
 

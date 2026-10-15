@@ -47,7 +47,7 @@ public final class SchemaHistoryFactory {
 			SqlScriptExecutorFactory sqlScriptExecutorFactory, SqlScriptFactory sqlScriptFactory, Database<?> database,
 			Schema<?, ?> schema) {
 		return new JdbcTableSchemaHistory(sqlScriptExecutorFactory, sqlScriptFactory, database,
-				schema.getTable(configuration.getTable()), configuration);
+				schema.getTable(configuration.getTable()));
 	}
 
 	public static Schemas prepareSchemas(Configuration configuration, Database<?> database) {

@@ -24,7 +24,7 @@ import org.jspecify.annotations.Nullable;
 /**
  * The result of migrate.
  */
-public sealed class MigrateResult extends OperationResultBase permits MigrateErrorResult {
+public final class MigrateResult extends OperationResultBase {
 
 	/**
 	 * Schema version before migrating or {@code null} if the schema was empty.
@@ -61,17 +61,6 @@ public sealed class MigrateResult extends OperationResultBase permits MigrateErr
 		this.schemaName = schemaName;
 		this.migrations = new ArrayList<>();
 		this.success = true;
-	}
-
-	MigrateResult(MigrateResult migrateResult) {
-		super(migrateResult.flyliteVersion, migrateResult.database, migrateResult.operation);
-		this.schemaName = migrateResult.schemaName;
-		this.migrations = migrateResult.migrations;
-		this.success = migrateResult.success;
-		this.migrationsExecuted = migrateResult.migrationsExecuted;
-		this.initialSchemaVersion = migrateResult.initialSchemaVersion;
-		this.targetSchemaVersion = migrateResult.targetSchemaVersion;
-		this.warnings = migrateResult.warnings;
 	}
 
 }

@@ -16,6 +16,8 @@
  */
 package com.snaphop.flylite.internal.util;
 
+import org.jspecify.annotations.Nullable;
+
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
@@ -26,8 +28,6 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 public class StringUtils {
-
-	private static final String WHITESPACE_CHARS = " \t\n\f\r";
 
 	/**
 	 * Trims or pads (with spaces) this string, so it has this exact length.
@@ -88,39 +88,6 @@ public class StringUtils {
 		return result.toString();
 	}
 
-	public static String rightPad(String original, int length, char padChar) {
-		StringBuilder result = new StringBuilder(original);
-		while (result.length() < length) {
-			result.append(padChar);
-		}
-		return result.toString();
-	}
-
-	/**
-	 * Replaces all sequences of whitespace by a single blank. Ex.:
-	 * "&nbsp;&nbsp;&nbsp;&nbsp;" -> " "
-	 * @param str The string to analyse.
-	 * @return The input string, with all whitespace collapsed.
-	 */
-	public static String collapseWhitespace(String str) {
-		StringBuilder result = new StringBuilder();
-		char previous = 0;
-		for (int i = 0; i < str.length(); i++) {
-			char c = str.charAt(i);
-			if (isCharAnyOf(c, WHITESPACE_CHARS)) {
-				if (previous != ' ') {
-					result.append(' ');
-				}
-				previous = ' ';
-			}
-			else {
-				result.append(c);
-				previous = c;
-			}
-		}
-		return result.toString();
-	}
-
 	/**
 	 * Returns the first n characters from this string, where n = count. If the string is
 	 * shorter, the entire string will be returned. If the string is longer, it will be
@@ -130,9 +97,6 @@ public class StringUtils {
 	 * @return The first n characters from this string, where n = count.
 	 */
 	public static String left(String str, int count) {
-		if (str == null) {
-			return null;
-		}
 		if (str.length() < count) {
 			return str;
 		}
@@ -157,7 +121,7 @@ public class StringUtils {
 	 * @return {@code true} if it has content, {@code false} if it is {@code null} or
 	 * blank.
 	 */
-	public static boolean hasLength(String str) {
+	public static boolean hasLength(@Nullable String str) {
 		return str != null && str.length() > 0;
 	}
 
@@ -179,9 +143,6 @@ public class StringUtils {
 	 * {@code null} if strings is {@code null}.
 	 */
 	public static String arrayToDelimitedString(String delimiter, Object[] strings) {
-		if (strings == null) {
-			return null;
-		}
 		StringBuilder builder = new StringBuilder();
 		for (int i = 0; i < strings.length; i++) {
 			if (i > 0) {
@@ -198,21 +159,8 @@ public class StringUtils {
 	 * @param s The string to check.
 	 * @return {@code true} if it has text, {@code false} if not.
 	 */
-	public static boolean hasText(String s) {
+	public static boolean hasText(@Nullable String s) {
 		return (s != null) && (s.trim().length() > 0);
-	}
-
-	/**
-	 * Splits this string into an array using this delimiter.
-	 * @param str The string to split.
-	 * @param delimiter The delimiter to use.
-	 * @return The resulting array.
-	 */
-	public static String[] tokenizeToStringArray(String str, String delimiter) {
-		if (str == null) {
-			return null;
-		}
-		return tokenizeToStringCollection(str, delimiter).toArray(new String[0]);
 	}
 
 	/**
@@ -222,9 +170,6 @@ public class StringUtils {
 	 * @return The resulting array.
 	 */
 	public static List<String> tokenizeToStringCollection(String str, String delimiter) {
-		if (str == null) {
-			return null;
-		}
 		return Arrays.stream(str.split(delimiter)).map(String::trim).collect(Collectors.toList());
 	}
 
@@ -261,21 +206,6 @@ public class StringUtils {
 	}
 
 	/**
-	 * Trim any leading occurrence of this character from the given String.
-	 * @param str the String to check.
-	 * @param character The character to trim.
-	 * @return the trimmed String
-	 * @see java.lang.Character#isWhitespace
-	 */
-	public static String trimLeadingCharacter(String str, char character) {
-		StringBuilder buf = new StringBuilder(str);
-		while (buf.length() > 0 && character == buf.charAt(0)) {
-			buf.deleteCharAt(0);
-		}
-		return buf.toString();
-	}
-
-	/**
 	 * Checks whether this strings both begins with this prefix and ends withs either of
 	 * these suffixes.
 	 * @param str The string to check.
@@ -297,57 +227,6 @@ public class StringUtils {
 	}
 
 	/**
-	 * Wrap this string every lineSize characters.
-	 * @param str The string to wrap.
-	 * @param lineSize The maximum size of each line.
-	 * @return The wrapped string.
-	 */
-	public static String wrap(String str, int lineSize) {
-		if (str.length() < lineSize) {
-			return str;
-		}
-		StringBuilder result = new StringBuilder();
-		int oldPos = 0;
-		for (int pos = lineSize; pos < str.length(); pos += lineSize) {
-			result.append(str, oldPos, pos).append("\n");
-			oldPos = pos;
-		}
-		result.append(str.substring(oldPos));
-		return result.toString();
-	}
-
-	/**
-	 * Wrap this string at the word boundary at or below lineSize characters.
-	 * @param str The string to wrap.
-	 * @param lineSize The maximum size of each line.
-	 * @return The word-wrapped string.
-	 */
-	public static String wordWrap(String str, int lineSize) {
-		if (str.length() < lineSize) {
-			return str;
-		}
-		StringBuilder result = new StringBuilder();
-		int oldPos = 0;
-		int pos = lineSize;
-		while (pos < str.length()) {
-			if (Character.isWhitespace(str.charAt(pos))) {
-				pos++;
-				continue;
-			}
-			String part = str.substring(oldPos, pos);
-			int spacePos = part.lastIndexOf(' ');
-			if (spacePos > 0) {
-				pos = oldPos + spacePos + 1;
-			}
-			result.append(str.substring(oldPos, pos).trim()).append("\n");
-			oldPos = pos;
-			pos += lineSize;
-		}
-		result.append(str.substring(oldPos));
-		return result.toString();
-	}
-
-	/**
 	 * Checks whether this character matches any of these characters.
 	 * @param c The char to check.
 	 * @param chars The chars that should match.
@@ -362,17 +241,6 @@ public class StringUtils {
 		return false;
 	}
 
-	public static Pair<String, String> getFileNameAndExtension(String path) {
-		String[] foldersSplit = path.split("[|/\\\\]");
-		String fileNameAndExtension = foldersSplit[foldersSplit.length - 1];
-		String[] nameExtensionSplit = fileNameAndExtension.split("\\.");
-		if (nameExtensionSplit.length < 2) {
-			return Pair.of(fileNameAndExtension, "");
-		}
-		return Pair.of(nameExtensionSplit[nameExtensionSplit.length - 2],
-				nameExtensionSplit[nameExtensionSplit.length - 1]);
-	}
-
 	public static Pair<String, String> splitAtFirstSeparator(String input, String separator) {
 		int separatorIndex = input.indexOf(separator);
 		if (separatorIndex >= 0) {
@@ -381,16 +249,6 @@ public class StringUtils {
 		else {
 			return Pair.of(input, "");
 		}
-	}
-
-	public static int countOccurrencesOf(String text, char search) {
-		int count = 0;
-		for (char c : text.toCharArray()) {
-			if (c == search) {
-				count++;
-			}
-		}
-		return count;
 	}
 
 	private StringUtils() {

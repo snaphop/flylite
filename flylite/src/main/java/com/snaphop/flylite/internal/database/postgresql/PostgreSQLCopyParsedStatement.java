@@ -31,6 +31,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.Objects;
 
 /**
  * A PostgreSQL COPY FROM STDIN statement.
@@ -68,10 +69,11 @@ public class PostgreSQLCopyParsedStatement extends ParsedSqlStatement {
 		Method copyManagerCopyInMethod;
 		try {
 			Connection connection = jdbcTemplate.getConnection();
-			ClassLoader classLoader = connection.getClass().getClassLoader();
+			ClassLoader classLoader = Objects.requireNonNullElse(connection.getClass().getClassLoader(),
+					ClassLoader.getSystemClassLoader());
 
 			Class<?> baseConnectionClass = classLoader.loadClass("org.postgresql.core.BaseConnection");
-			baseConnection = connection.unwrap(baseConnectionClass);
+			baseConnection = Objects.requireNonNull(connection.unwrap(baseConnectionClass));
 
 			Class<?> copyManagerClass = classLoader.loadClass("org.postgresql.copy.CopyManager");
 			Constructor<?> copyManagerConstructor = copyManagerClass.getConstructor(baseConnectionClass);
@@ -86,8 +88,8 @@ public class PostgreSQLCopyParsedStatement extends ParsedSqlStatement {
 		Results results = new Results();
 		try {
 			try {
-				Long updateCount = (Long) copyManagerCopyInMethod.invoke(copyManager, getSql(),
-						new StringReader(copyData));
+				Long updateCount = (Long) Objects
+					.requireNonNull(copyManagerCopyInMethod.invoke(copyManager, getSql(), new StringReader(copyData)));
 				results.addResult(new Result(updateCount, null, null, getSql()));
 			}
 			catch (IllegalAccessException | InvocationTargetException e) {
@@ -95,7 +97,7 @@ public class PostgreSQLCopyParsedStatement extends ParsedSqlStatement {
 			}
 		}
 		catch (SQLException e) {
-			jdbcTemplate.extractErrors(results, e);
+			results.setException(e);
 		}
 		return results;
 	}

@@ -16,9 +16,12 @@
  */
 package com.snaphop.flylite.internal.database.postgresql;
 
+import org.jspecify.annotations.Nullable;
+
+import com.snaphop.flylite.api.FlyliteException;
+
 import com.snaphop.flylite.internal.database.base.Schema;
 import com.snaphop.flylite.internal.database.base.Table;
-import com.snaphop.flylite.internal.database.base.Type;
 import com.snaphop.flylite.internal.jdbc.JdbcTemplate;
 
 import java.sql.SQLException;
@@ -50,18 +53,25 @@ public class PostgreSQLSchema extends Schema<PostgreSQLDatabase, PostgreSQLTable
 
 	@Override
 	protected boolean doEmpty() throws SQLException {
-		return !jdbcTemplate.queryForBoolean("SELECT EXISTS (\n" + "    SELECT c.oid FROM pg_catalog.pg_class c\n"
-				+ "    JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace\n"
-				+ "    LEFT JOIN pg_catalog.pg_depend d ON d.objid = c.oid AND d.deptype = 'e'\n"
-				+ "    WHERE  n.nspname = ? AND d.objid IS NULL AND c.relkind IN ('r', 'v', 'S', 't')\n"
-				+ "  UNION ALL\n" + "    SELECT t.oid FROM pg_catalog.pg_type t\n"
-				+ "    JOIN pg_catalog.pg_namespace n ON n.oid = t.typnamespace\n"
-				+ "    LEFT JOIN pg_catalog.pg_depend d ON d.objid = t.oid AND d.deptype = 'e'\n"
-				+ "    WHERE n.nspname = ? AND d.objid IS NULL AND t.typcategory NOT IN ('A', 'C')\n" + "  UNION ALL\n"
-				+ "    SELECT p.oid FROM pg_catalog.pg_proc p\n"
-				+ "    JOIN pg_catalog.pg_namespace n ON n.oid = p.pronamespace\n"
-				+ "    LEFT JOIN pg_catalog.pg_depend d ON d.objid = p.oid AND d.deptype = 'e'\n"
-				+ "    WHERE n.nspname = ? AND d.objid IS NULL\n" + ")", name, name, name);
+		// Upstream Flyway did not count materialized views ('m') and partitioned tables
+		// ('p')
+		return !jdbcTemplate.queryForBoolean("""
+				SELECT EXISTS (
+				    SELECT c.oid FROM pg_catalog.pg_class c
+				    JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace
+				    LEFT JOIN pg_catalog.pg_depend d ON d.objid = c.oid AND d.deptype = 'e'
+				    WHERE  n.nspname = ? AND d.objid IS NULL AND c.relkind IN ('r', 'v', 'S', 't', 'm', 'p')
+				  UNION ALL
+				    SELECT t.oid FROM pg_catalog.pg_type t
+				    JOIN pg_catalog.pg_namespace n ON n.oid = t.typnamespace
+				    LEFT JOIN pg_catalog.pg_depend d ON d.objid = t.oid AND d.deptype = 'e'
+				    WHERE n.nspname = ? AND d.objid IS NULL AND t.typcategory NOT IN ('A', 'C')
+				  UNION ALL
+				    SELECT p.oid FROM pg_catalog.pg_proc p
+				    JOIN pg_catalog.pg_namespace n ON n.oid = p.pronamespace
+				    LEFT JOIN pg_catalog.pg_depend d ON d.objid = p.oid AND d.deptype = 'e'
+				    WHERE n.nspname = ? AND d.objid IS NULL
+				)""", name, name, name);
 	}
 
 	@Override
@@ -166,8 +176,7 @@ public class PostgreSQLSchema extends Schema<PostgreSQLDatabase, PostgreSQLTable
 	}
 
 	private boolean extensionsTableExists() throws SQLException {
-		return jdbcTemplate.queryForBoolean(
-				"SELECT EXISTS ( \n" + "SELECT 1 \n" + "FROM pg_tables \n" + "WHERE tablename = 'pg_extension');");
+		return jdbcTemplate.queryForBoolean("SELECT EXISTS (SELECT 1 FROM pg_tables WHERE tablename = 'pg_extension')");
 	}
 
 	/**
@@ -195,7 +204,7 @@ public class PostgreSQLSchema extends Schema<PostgreSQLDatabase, PostgreSQLTable
 	 * @throws SQLException when the clean statements could not be generated.
 	 */
 	private List<String> generateDropStatementsForBaseTypes(boolean recreate) throws SQLException {
-		List<Map<String, String>> rows = jdbcTemplate
+		List<Map<String, @Nullable String>> rows = jdbcTemplate
 			.queryForList("select typname, typcategory from pg_catalog.pg_type t "
 					+ "left join pg_depend dep on dep.objid = t.oid and dep.deptype = 'e' "
 					+ "where (t.typrelid = 0 OR (SELECT c.relkind = 'c' FROM pg_catalog.pg_class c WHERE c.oid = t.typrelid)) "
@@ -204,15 +213,16 @@ public class PostgreSQLSchema extends Schema<PostgreSQLDatabase, PostgreSQLTable
 					+ "and dep.objid is null " + "and t.typtype != 'd'", name);
 
 		List<String> statements = new ArrayList<>();
-		for (Map<String, String> row : rows) {
-			statements.add("DROP TYPE IF EXISTS " + database.quote(name, row.get("typname")) + " CASCADE");
+		for (Map<String, @Nullable String> row : rows) {
+			statements.add("DROP TYPE IF EXISTS " + database.quote(name, column(row, "typname")) + " CASCADE");
 		}
 
 		if (recreate) {
-			for (Map<String, String> row : rows) {
+			for (Map<String, @Nullable String> row : rows) {
 				// Only recreate Pseudo-types (P) and User-defined types (U)
-				if (Arrays.asList("P", "U").contains(row.get("typcategory"))) {
-					statements.add("CREATE TYPE " + database.quote(name, row.get("typname")));
+				String category = row.get("typcategory");
+				if ("P".equals(category) || "U".equals(category)) {
+					statements.add("CREATE TYPE " + database.quote(name, column(row, "typname")));
 				}
 			}
 		}
@@ -232,7 +242,7 @@ public class PostgreSQLSchema extends Schema<PostgreSQLDatabase, PostgreSQLTable
 		// PROCEDURE is only available from PostgreSQL 11
 		String isProcedure = database.getVersion().isAtLeast("11") ? "pg_proc.prokind = 'p'" : "FALSE";
 
-		List<Map<String, String>> rows = jdbcTemplate.queryForList(
+		List<Map<String, @Nullable String>> rows = jdbcTemplate.queryForList(
 				// Search for all functions
 				"SELECT proname, oidvectortypes(proargtypes) AS args, " + isAggregate + " as agg, " + isProcedure
 						+ " as proc " + "FROM pg_proc INNER JOIN pg_namespace ns ON (pg_proc.pronamespace = ns.oid) "
@@ -242,7 +252,7 @@ public class PostgreSQLSchema extends Schema<PostgreSQLDatabase, PostgreSQLTable
 				name);
 
 		List<String> statements = new ArrayList<>();
-		for (Map<String, String> row : rows) {
+		for (Map<String, @Nullable String> row : rows) {
 			String type = "FUNCTION";
 			if (isTrue(row.get("agg"))) {
 				type = "AGGREGATE";
@@ -250,13 +260,13 @@ public class PostgreSQLSchema extends Schema<PostgreSQLDatabase, PostgreSQLTable
 			else if (isTrue(row.get("proc"))) {
 				type = "PROCEDURE";
 			}
-			statements.add("DROP " + type + " IF EXISTS " + database.quote(name, row.get("proname")) + "("
-					+ row.get("args") + ") CASCADE");
+			statements.add("DROP " + type + " IF EXISTS " + database.quote(name, column(row, "proname")) + "("
+					+ column(row, "args") + ") CASCADE");
 		}
 		return statements;
 	}
 
-	private boolean isTrue(String agg) {
+	private boolean isTrue(@Nullable String agg) {
 		return agg != null && agg.toLowerCase(Locale.ENGLISH).startsWith("t");
 	}
 
@@ -284,11 +294,14 @@ public class PostgreSQLSchema extends Schema<PostgreSQLDatabase, PostgreSQLTable
 	 * @throws SQLException when the clean statements could not be generated.
 	 */
 	private List<String> generateDropStatementsForDomains() throws SQLException {
-		List<String> domainNames = jdbcTemplate
-			.queryForStringList("SELECT t.typname as domain_name\n" + "FROM pg_catalog.pg_type t\n"
-					+ "       LEFT JOIN pg_catalog.pg_namespace n ON n.oid = t.typnamespace\n"
-					+ "       LEFT JOIN pg_depend dep ON dep.objid = t.oid AND dep.deptype = 'e'\n"
-					+ "WHERE t.typtype = 'd'\n" + "  AND n.nspname = ?\n" + "  AND dep.objid IS NULL", name);
+		List<String> domainNames = jdbcTemplate.queryForStringList("""
+				SELECT t.typname as domain_name
+				FROM pg_catalog.pg_type t
+				       LEFT JOIN pg_catalog.pg_namespace n ON n.oid = t.typnamespace
+				       LEFT JOIN pg_depend dep ON dep.objid = t.oid AND dep.deptype = 'e'
+				WHERE t.typtype = 'd'
+				  AND n.nspname = ?
+				  AND dep.objid IS NULL""", name);
 
 		List<String> statements = new ArrayList<>();
 		for (String domainName : domainNames) {
@@ -371,9 +384,12 @@ public class PostgreSQLSchema extends Schema<PostgreSQLDatabase, PostgreSQLTable
 		return new PostgreSQLTable(jdbcTemplate, database, this, tableName);
 	}
 
-	@Override
-	protected Type<?, ?> getType(String typeName) {
-		return new PostgreSQLType(jdbcTemplate, database, this, typeName);
+	private static String column(Map<String, @Nullable String> row, String column) {
+		String value = row.get(column);
+		if (value == null) {
+			throw new FlyliteException("Unexpected null " + column + " while cleaning schema");
+		}
+		return value;
 	}
 
 }

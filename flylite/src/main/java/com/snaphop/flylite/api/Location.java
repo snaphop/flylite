@@ -20,6 +20,8 @@ import java.io.File;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.jspecify.annotations.Nullable;
+
 /**
  * A location to load migrations from.
  */
@@ -48,11 +50,11 @@ public final class Location implements Comparable<Location> {
 	 * The first folder in the path. This will equal rawPath if the path does not contain
 	 * any wildcards
 	 */
-	private String rootPath;
+	private String rootPath = "";
 
 	/**
 	 */
-	private Pattern pathRegex = null;
+	private @Nullable Pattern pathRegex;
 
 	public Location(String descriptor) {
 		String normalizedDescriptor = descriptor.trim();
@@ -95,6 +97,8 @@ public final class Location implements Comparable<Location> {
 	 * 0 or more directories *: Match any sequence of non-separator characters ?: Match
 	 * any single character
 	 */
+	// String.split drops trailing empty strings, which is relied upon here
+	@SuppressWarnings("StringSplitter")
 	private void processRawPath() {
 		if (rawPath.contains("*") || rawPath.contains("?")) {
 			// we need to figure out the root, and create the regex
@@ -162,6 +166,7 @@ public final class Location implements Comparable<Location> {
 	}
 
 	/**
+	 * Returns whether the given path matches this locations regex. Will always return
 	 * @return Whether the given path matches this locations regex. Will always return
 	 * true when the location did not contain any wildcards.
 	 */
@@ -226,6 +231,7 @@ public final class Location implements Comparable<Location> {
 	}
 
 	/**
+	 * Returns the path part of the location.
 	 * @return The path part of the location.
 	 */
 	public String getPath() {
@@ -233,6 +239,7 @@ public final class Location implements Comparable<Location> {
 	}
 
 	/**
+	 * Returns the complete location descriptor.
 	 * @return The complete location descriptor.
 	 */
 	public String getDescriptor() {
@@ -245,7 +252,7 @@ public final class Location implements Comparable<Location> {
 	}
 
 	@Override
-	public boolean equals(Object o) {
+	public boolean equals(@Nullable Object o) {
 		if (this == o) {
 			return true;
 		}
@@ -262,6 +269,7 @@ public final class Location implements Comparable<Location> {
 	}
 
 	/**
+	 * Returns the complete location descriptor.
 	 * @return The complete location descriptor.
 	 */
 	@Override
@@ -270,6 +278,7 @@ public final class Location implements Comparable<Location> {
 	}
 
 	/**
+	 * Returns the prefix part of the location. Can be either classpath: or filesystem:.
 	 * @return The prefix part of the location. Can be either classpath: or filesystem:.
 	 */
 	public String getPrefix() {
@@ -286,10 +295,11 @@ public final class Location implements Comparable<Location> {
 	}
 
 	/**
+	 * Returns the regex that matches wildcards in the original path. Null if the original
 	 * @return The regex that matches wildcards in the original path. Null if the original
 	 * path did not contain any wildcards.
 	 */
-	public Pattern getPathRegex() {
+	public @Nullable Pattern getPathRegex() {
 		return this.pathRegex;
 	}
 

@@ -16,6 +16,8 @@
  */
 package com.snaphop.flylite.internal.sqlscript;
 
+import org.jspecify.annotations.Nullable;
+
 /**
  * Represents a sql statement delimiter.
  */
@@ -46,18 +48,11 @@ public class Delimiter {
 	}
 
 	/**
+	 * Returns whether the delimiter sits alone on a new line or not.
 	 * @return Whether the delimiter sits alone on a new line or not.
 	 */
 	public boolean shouldBeAloneOnLine() {
 		return aloneOnLine;
-	}
-
-	/**
-	 * @return The escape string for the delimiter, if any.
-	 */
-	public String getEscape() {
-		String returnValue = null;
-		return returnValue;
 	}
 
 	@Override
@@ -66,14 +61,13 @@ public class Delimiter {
 	}
 
 	@Override
-	public boolean equals(Object o) {
+	public boolean equals(@Nullable Object o) {
 		if (this == o) {
 			return true;
 		}
-		if (o == null || getClass() != o.getClass()) {
+		if (!(o instanceof Delimiter delimiter1)) {
 			return false;
 		}
-		Delimiter delimiter1 = (Delimiter) o;
 		return aloneOnLine == delimiter1.aloneOnLine && delimiter.equals(delimiter1.delimiter);
 	}
 

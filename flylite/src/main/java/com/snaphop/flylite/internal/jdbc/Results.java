@@ -20,6 +20,8 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.jspecify.annotations.Nullable;
+
 /**
  * Container for all results, warnings, errors and remaining side-effects of a sql
  * statement.
@@ -32,7 +34,7 @@ public class Results {
 
 	private final List<Warning> warnings = new ArrayList<>();
 
-	private SQLException exception = null;
+	private @Nullable SQLException exception;
 
 	public void addResult(Result result) {
 		results.add(result);
@@ -50,7 +52,7 @@ public class Results {
 		return this.warnings;
 	}
 
-	public SQLException getException() {
+	public @Nullable SQLException getException() {
 		return this.exception;
 	}
 

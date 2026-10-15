@@ -16,6 +16,8 @@
  */
 package com.snaphop.flylite.internal.command;
 
+import org.jspecify.annotations.Nullable;
+
 import com.snaphop.flylite.internal.logging.Log;
 import com.snaphop.flylite.api.ErrorCode;
 import com.snaphop.flylite.api.FlyliteException;
@@ -26,7 +28,6 @@ import com.snaphop.flylite.api.callback.Event;
 import com.snaphop.flylite.api.configuration.Configuration;
 import com.snaphop.flylite.api.executor.Context;
 import com.snaphop.flylite.internal.command.CommandResultFactory;
-import com.snaphop.flylite.api.output.MigrateErrorResult;
 import com.snaphop.flylite.api.output.MigrateResult;
 import com.snaphop.flylite.api.resolver.ResolvedMigration;
 import com.snaphop.flylite.internal.callback.CallbackExecutor;
@@ -66,7 +67,7 @@ public class DbMigrate {
 	 */
 	private final Connection<?> connectionUserObjects;
 
-	private MigrateResult migrateResult;
+	private final MigrateResult migrateResult;
 
 	/**
 	 * This is used to remember the type of migration between calls to migrateGroup().
@@ -85,6 +86,7 @@ public class DbMigrate {
 		this.migrationResolver = migrationResolver;
 		this.configuration = configuration;
 		this.callbackExecutor = callbackExecutor;
+		this.migrateResult = CommandResultFactory.createMigrateResult(database.getCatalog(), configuration);
 	}
 
 	/**
@@ -92,7 +94,6 @@ public class DbMigrate {
 	 */
 	public MigrateResult migrate() throws FlyliteException {
 		callbackExecutor.onMigrateEvent(Event.BEFORE_MIGRATE);
-		migrateResult = CommandResultFactory.createMigrateResult(database.getCatalog(), configuration);
 		int count;
 		try {
 			StopWatch stopWatch = new StopWatch();
@@ -120,7 +121,7 @@ public class DbMigrate {
 		return migrateResult;
 	}
 
-	private String getTargetVersion() {
+	private @Nullable String getTargetVersion() {
 		if (!migrateResult.migrations.isEmpty()) {
 			for (int i = migrateResult.migrations.size() - 1; i >= 0; i--) {
 				String targetVersion = migrateResult.migrations.get(i).version();
@@ -150,7 +151,7 @@ public class DbMigrate {
 				// No further migrations available
 				break;
 			}
-			else if (configuration.getTarget() == MigrationVersion.NEXT) {
+			else if (MigrationVersion.NEXT.equals(configuration.getTarget())) {
 				// With target=next we only execute one migration
 				break;
 			}
@@ -218,20 +219,21 @@ public class DbMigrate {
 				if (failed[0].getVersion() == null) {
 					throw new FlyliteMigrateException(failed[0], "Schema " + schema
 							+ " contains a failed repeatable migration (" + doQuote(failed[0].getDescription()) + ") !",
-							inTransaction, migrateResult);
+							inTransaction);
 				}
 				throw new FlyliteMigrateException(failed[0],
 						"Schema " + schema + " contains a failed migration to version " + failed[0].getVersion() + " !",
-						inTransaction, migrateResult);
+						inTransaction);
 			}
 		}
 		LinkedHashMap<MigrationInfoImpl, Boolean> group = new LinkedHashMap<>();
 		for (MigrationInfoImpl pendingMigration : infoService.pending()) {
-			if (appliedResolvedMigrations.contains(pendingMigration.getResolvedMigration())) {
+			ResolvedMigration pendingResolved = pendingMigration.getResolvedMigration();
+			if (pendingResolved != null && appliedResolvedMigrations.contains(pendingResolved)) {
 				continue;
 			}
-			boolean isOutOfOrder = pendingMigration.getVersion() != null
-					&& pendingMigration.getVersion().compareTo(currentSchemaVersion) < 0;
+			MigrationVersion pendingVersion = pendingMigration.getVersion();
+			boolean isOutOfOrder = pendingVersion != null && pendingVersion.compareTo(currentSchemaVersion) < 0;
 			group.put(pendingMigration, isOutOfOrder);
 			if (!configuration.isGroup()) {
 				// Only include one pending migration if group is disabled
@@ -245,7 +247,7 @@ public class DbMigrate {
 		return group.size();
 	}
 
-	private void logSummary(int migrationSuccessCount, long executionTime, String targetVersion) {
+	private void logSummary(int migrationSuccessCount, long executionTime, @Nullable String targetVersion) {
 		if (migrationSuccessCount == 0) {
 			LOG.info("Schema " + schema + " is up to date. No migration necessary.");
 			return;
@@ -260,8 +262,7 @@ public class DbMigrate {
 	 * Applies this migration to the database. The migration state and the execution time
 	 * are updated accordingly.
 	 */
-	private void applyMigrations(final LinkedHashMap<MigrationInfoImpl, Boolean> group,
-			boolean skipExecutingMigrations) {
+	private void applyMigrations(final Map<MigrationInfoImpl, Boolean> group, boolean skipExecutingMigrations) {
 		boolean executeGroupInTransaction = isExecuteGroupInTransaction(group);
 		final StopWatch stopWatch = new StopWatch();
 		try {
@@ -294,11 +295,11 @@ public class DbMigrate {
 		}
 	}
 
-	private boolean isExecuteGroupInTransaction(LinkedHashMap<MigrationInfoImpl, Boolean> group) {
+	private boolean isExecuteGroupInTransaction(Map<MigrationInfoImpl, Boolean> group) {
 		boolean executeGroupInTransaction = true;
 		boolean first = true;
 		for (Map.Entry<MigrationInfoImpl, Boolean> entry : group.entrySet()) {
-			ResolvedMigration resolvedMigration = entry.getKey().getResolvedMigration();
+			ResolvedMigration resolvedMigration = Objects.requireNonNull(entry.getKey().getResolvedMigration());
 			boolean inTransaction = resolvedMigration.getExecutor().canExecuteInTransaction();
 			if (first) {
 				executeGroupInTransaction = inTransaction;
@@ -313,14 +314,14 @@ public class DbMigrate {
 										+ (StringUtils.hasLength(resolvedMigration.getDescription())
 												? " " + resolvedMigration.getDescription() : ""))
 								+ (inTransaction ? "" : " [non-transactional]"),
-						inTransaction, migrateResult);
+						inTransaction);
 			}
 			executeGroupInTransaction &= inTransaction;
 		}
 		return executeGroupInTransaction;
 	}
 
-	private void doMigrateGroup(LinkedHashMap<MigrationInfoImpl, Boolean> group, StopWatch stopWatch,
+	private void doMigrateGroup(Map<MigrationInfoImpl, Boolean> group, StopWatch stopWatch,
 			boolean skipExecutingMigrations, boolean isExecuteInTransaction) {
 		Context context = new Context() {
 			@Override
@@ -362,21 +363,22 @@ public class DbMigrate {
 						if (database.useSingleConnection() && !isExecuteInTransaction) {
 							context.getConnection().setAutoCommit(true);
 						}
-						migration.getResolvedMigration().getExecutor().execute(context);
+						ResolvedMigration resolvedMigration = Objects.requireNonNull(migration.getResolvedMigration());
+						resolvedMigration.getExecutor().execute(context);
 						if (database.useSingleConnection() && !isExecuteInTransaction) {
 							context.getConnection().setAutoCommit(oldAutoCommit);
 						}
-						appliedResolvedMigrations.add(migration.getResolvedMigration());
+						appliedResolvedMigrations.add(resolvedMigration);
 					}
 					catch (FlyliteException e) {
 						callbackExecutor.onEachMigrateEvent(Event.AFTER_EACH_MIGRATE_ERROR);
 						throw new FlyliteMigrateException(migration, isOutOfOrder, e,
-								migration.canExecuteInTransaction(), migrateResult);
+								migration.canExecuteInTransaction());
 					}
 					catch (SQLException e) {
 						callbackExecutor.onEachMigrateEvent(Event.AFTER_EACH_MIGRATE_ERROR);
 						throw new FlyliteMigrateException(migration, isOutOfOrder, e,
-								migration.canExecuteInTransaction(), migrateResult);
+								migration.canExecuteInTransaction());
 					}
 					LOG.debug("Successfully completed migration of " + migrationText);
 					callbackExecutor.onEachMigrateEvent(Event.AFTER_EACH_MIGRATE);
@@ -389,7 +391,8 @@ public class DbMigrate {
 			int executionTime = (int) stopWatch.getTotalTimeMillis();
 			migrateResult.migrations.add(CommandResultFactory.createMigrateOutput(migration, executionTime));
 			schemaHistory.addAppliedMigration(migration.getVersion(), migration.getDescription(), migration.getType(),
-					migration.getScript(), migration.getResolvedMigration().getChecksum(), executionTime, true);
+					migration.getScript(), Objects.requireNonNull(migration.getResolvedMigration()).getChecksum(),
+					executionTime, true);
 		}
 	}
 
@@ -419,42 +422,27 @@ public class DbMigrate {
 
 		private final boolean outOfOrder;
 
-		private final MigrateErrorResult errorResult;
-
-		public ErrorCode getMigrationErrorCode() {
-			if (migration.getVersion() != null) {
-				return ErrorCode.FAILED_VERSIONED_MIGRATION;
-			}
-			else {
-				return ErrorCode.FAILED_REPEATABLE_MIGRATION;
-			}
-		}
-
 		FlyliteMigrateException(MigrationInfo migration, boolean outOfOrder, SQLException e,
-				boolean canExecuteInTransaction, MigrateResult partialResult) {
+				boolean canExecuteInTransaction) {
 			super(ExceptionUtils.toMessage(e), e);
 			this.migration = migration;
 			this.outOfOrder = outOfOrder;
 			this.executableInTransaction = canExecuteInTransaction;
-			this.errorResult = new MigrateErrorResult(partialResult, this);
 		}
 
-		FlyliteMigrateException(MigrationInfo migration, String message, boolean canExecuteInTransaction,
-				MigrateResult partialResult) {
+		FlyliteMigrateException(MigrationInfo migration, String message, boolean canExecuteInTransaction) {
 			super(message);
 			this.outOfOrder = false;
 			this.migration = migration;
 			this.executableInTransaction = canExecuteInTransaction;
-			this.errorResult = new MigrateErrorResult(partialResult, this);
 		}
 
 		FlyliteMigrateException(MigrationInfo migration, boolean outOfOrder, FlyliteException e,
-				boolean canExecuteInTransaction, MigrateResult partialResult) {
+				boolean canExecuteInTransaction) {
 			super(e.getMessage(), e);
 			this.migration = migration;
 			this.outOfOrder = outOfOrder;
 			this.executableInTransaction = canExecuteInTransaction;
-			this.errorResult = new MigrateErrorResult(partialResult, this);
 		}
 
 		public MigrationInfo getMigration() {
@@ -467,10 +455,6 @@ public class DbMigrate {
 
 		public boolean isOutOfOrder() {
 			return this.outOfOrder;
-		}
-
-		public MigrateErrorResult getErrorResult() {
-			return this.errorResult;
 		}
 
 	}

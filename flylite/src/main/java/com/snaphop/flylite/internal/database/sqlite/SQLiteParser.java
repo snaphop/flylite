@@ -16,6 +16,7 @@
  */
 package com.snaphop.flylite.internal.database.sqlite;
 
+import org.jspecify.annotations.Nullable;
 import com.snaphop.flylite.api.configuration.Configuration;
 import com.snaphop.flylite.internal.parser.*;
 
@@ -34,7 +35,7 @@ public class SQLiteParser extends Parser {
 	}
 
 	@Override
-	protected Boolean detectCanExecuteInTransaction(String simplifiedStatement, List<Token> keywords) {
+	protected @Nullable Boolean detectCanExecuteInTransaction(String simplifiedStatement, List<Token> keywords) {
 		if ("PRAGMA FOREIGN_KEYS".equals(simplifiedStatement)) {
 			return false;
 		}

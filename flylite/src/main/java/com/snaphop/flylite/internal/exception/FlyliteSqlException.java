@@ -34,10 +34,10 @@ public class FlyliteSqlException extends FlyliteException {
 
 	@Override
 	public String getMessage() {
-		String title = super.getMessage();
+		String title = String.valueOf(super.getMessage());
 		String underline = StringUtils.trimOrPad("", title.length(), '-');
-
-		return title + "\n" + underline + "\n" + ExceptionUtils.toMessage((SQLException) getCause());
+		String details = getCause() instanceof SQLException e ? ExceptionUtils.toMessage(e) : "";
+		return title + "\n" + underline + "\n" + details;
 	}
 
 }

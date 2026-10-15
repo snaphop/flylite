@@ -25,17 +25,20 @@ import com.snaphop.flylite.internal.jdbc.Results;
 public interface SqlStatement {
 
 	/**
+	 * Returns the original line number where the statement was located in the script it
 	 * @return The original line number where the statement was located in the script it
 	 * came from.
 	 */
 	int getLineNumber();
 
 	/**
+	 * Returns the sql to send to the database.
 	 * @return The sql to send to the database.
 	 */
 	String getSql();
 
 	/**
+	 * Returns the delimiter for the statement.
 	 * @return The delimiter for the statement.
 	 */
 	String getDelimiter();

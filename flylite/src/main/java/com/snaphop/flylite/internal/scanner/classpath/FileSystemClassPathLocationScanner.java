@@ -30,6 +30,7 @@ public class FileSystemClassPathLocationScanner implements ClassPathLocationScan
 
 	private static final Log LOG = Log.of(FileSystemClassPathLocationScanner.class);
 
+	@Override
 	public Set<String> findResourceNames(String location, URL locationUrl) {
 		String filePath = UrlUtils.toFilePath(locationUrl);
 		File folder = new File(filePath);
@@ -60,6 +61,9 @@ public class FileSystemClassPathLocationScanner implements ClassPathLocationScan
 		LOG.debug("Scanning for resources in path: " + folder.getPath() + " (" + scanRootLocation + ")");
 		Set<String> resourceNames = new TreeSet<>();
 		File[] files = folder.listFiles();
+		if (files == null) {
+			return resourceNames;
+		}
 		for (File file : files) {
 			if (file.canRead()) {
 				if (file.isDirectory()) {

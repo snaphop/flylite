@@ -57,11 +57,11 @@ public class TransactionalExecutionTemplate implements ExecutionTemplate {
 		}
 		catch (Exception e) {
 			RuntimeException rethrow;
-			if (e instanceof SQLException) {
-				rethrow = new FlyliteSqlException("Unable to commit transaction", (SQLException) e);
+			if (e instanceof SQLException sqlException) {
+				rethrow = new FlyliteSqlException("Unable to commit transaction", sqlException);
 			}
-			else if (e instanceof RuntimeException) {
-				rethrow = (RuntimeException) e;
+			else if (e instanceof RuntimeException runtimeException) {
+				rethrow = runtimeException;
 			}
 			else {
 				rethrow = new FlyliteException(e);

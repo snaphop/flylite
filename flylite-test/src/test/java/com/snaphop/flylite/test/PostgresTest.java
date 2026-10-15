@@ -265,4 +265,14 @@ class PostgresTest {
 		assertNotNull(jdbc.string("SELECT d FROM other.info"));
 	}
 
+	@Test
+	void schemaWithOnlyAMaterializedViewIsNotEmpty() {
+		var database = Db.POSTGRES.create(dir);
+		database.jdbc().execute("CREATE MATERIALIZED VIEW existing AS SELECT 1 AS id");
+		var migrations = new Migrations(dir.resolve("m")).add("V1__T.sql", "CREATE TABLE t (id INT);\n");
+		var e = assertThrows(FlyliteException.class,
+				() -> database.configure().locations(migrations.location()).load().migrate());
+		assertTrue(e.getMessage().contains("non-empty schema"), e.getMessage());
+	}
+
 }

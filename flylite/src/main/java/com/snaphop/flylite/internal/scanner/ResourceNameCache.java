@@ -16,30 +16,35 @@
  */
 package com.snaphop.flylite.internal.scanner;
 
-import com.snaphop.flylite.internal.scanner.classpath.ClassPathLocationScanner;
-
 import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
+import org.jspecify.annotations.Nullable;
+
+import com.snaphop.flylite.internal.scanner.classpath.ClassPathLocationScanner;
+
+/**
+ * Caches the resource names found by each location scanner for each url so that repeated
+ * commands do not scan the classpath again.
+ */
 public class ResourceNameCache {
 
 	/**
-	 * Cache resource names.
+	 * Resource names by scanner and url. Urls are keyed by their external form because
+	 * {@link URL#equals(Object)} resolves host names.
 	 */
-	private final Map<ClassPathLocationScanner, Map<URL, Set<String>>> resourceNameCache = new HashMap<>();
-
-	public void put(ClassPathLocationScanner classPathLocationScanner, Map<URL, Set<String>> map) {
-		resourceNameCache.put(classPathLocationScanner, map);
-	}
+	private final Map<ClassPathLocationScanner, Map<String, Set<String>>> resourceNameCache = new HashMap<>();
 
 	public void put(ClassPathLocationScanner classPathLocationScanner, URL resolvedUrl, Set<String> names) {
-		resourceNameCache.get(classPathLocationScanner).put(resolvedUrl, names);
+		resourceNameCache.computeIfAbsent(classPathLocationScanner, k -> new HashMap<>())
+			.put(resolvedUrl.toExternalForm(), names);
 	}
 
-	public Set<String> get(ClassPathLocationScanner classPathLocationScanner, URL resolvedUrl) {
-		return resourceNameCache.get(classPathLocationScanner).get(resolvedUrl);
+	public @Nullable Set<String> get(ClassPathLocationScanner classPathLocationScanner, URL resolvedUrl) {
+		Map<String, Set<String>> names = resourceNameCache.get(classPathLocationScanner);
+		return names == null ? null : names.get(resolvedUrl.toExternalForm());
 	}
 
 }

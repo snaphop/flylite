@@ -130,9 +130,33 @@ public final class MigrationInfoImpl implements MigrationInfo {
 			if (shouldNotExecuteMigration) {
 				return MigrationState.IGNORED;
 			}
-			return resolved().getState(context);
+			return resolvedState(resolved(), context);
 		}
 		return am.getState(context, outOfOrder, resolvedMigration);
+	}
+
+	private static MigrationState resolvedState(ResolvedMigration resolved, MigrationInfoContext context) {
+		MigrationVersion version = resolved.getVersion();
+		if (version != null) {
+			MigrationVersion baseline = MigrationVersion.EMPTY.equals(context.lastApplied) ? context.pendingBaseline
+					: context.appliedBaseline;
+			// compareTo treats a missing baseline as older than every version
+			int toBaseline = version.compareTo(baseline);
+			if (toBaseline < 0) {
+				return MigrationState.BELOW_BASELINE;
+			}
+			if (toBaseline == 0) {
+				return MigrationState.BASELINE_IGNORED;
+			}
+			MigrationVersion target = context.target;
+			if (target != null && !MigrationVersion.NEXT.equals(target) && version.compareTo(target) > 0) {
+				return MigrationState.ABOVE_TARGET;
+			}
+			if ((version.compareTo(context.lastApplied) < 0) && !context.outOfOrder) {
+				return MigrationState.IGNORED;
+			}
+		}
+		return MigrationState.PENDING;
 	}
 
 	@Override
@@ -296,16 +320,17 @@ public final class MigrationInfoImpl implements MigrationInfo {
 		if (SchemaHistory.NO_DESCRIPTION_MARKER.equals(appliedMigration.getDescription())) {
 			return !"".equals(resolvedMigration.getDescription());
 		}
-		return (!AbbreviationUtils.abbreviateDescription(resolvedMigration.getDescription())
-			.equals(appliedMigration.getDescription()));
+		return !AbbreviationUtils.abbreviateDescription(resolvedMigration.getDescription())
+			.equals(appliedMigration.getDescription());
 	}
 
 	private static String createMismatchMessage(String mismatch, String migrationIdentifier, @Nullable Object applied,
 			@Nullable Object resolved) {
-		return String.format(
-				"Migration " + mismatch + " mismatch for migration %s\n" + "-> Applied to database : %s\n"
-						+ "-> Resolved locally    : %s\n"
-						+ "Either revert the changes to the migration, or run repair to update the schema history.",
+		return String.format("""
+				Migration %s mismatch for migration %s
+				-> Applied to database : %s
+				-> Resolved locally    : %s
+				Either revert the changes to the migration, or run repair to update the schema history.""", mismatch,
 				migrationIdentifier, applied, resolved);
 	}
 

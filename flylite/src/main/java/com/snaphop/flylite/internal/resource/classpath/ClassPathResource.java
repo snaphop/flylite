@@ -16,7 +16,8 @@
  */
 package com.snaphop.flylite.internal.resource.classpath;
 
-import com.snaphop.flylite.internal.logging.Log;
+import org.jspecify.annotations.Nullable;
+
 import com.snaphop.flylite.api.FlyliteException;
 import com.snaphop.flylite.api.Location;
 import com.snaphop.flylite.api.resource.LoadableResource;
@@ -30,8 +31,6 @@ import java.util.Objects;
 
 public class ClassPathResource extends LoadableResource {
 
-	private static final Log LOG = Log.of(ClassPathResource.class);
-
 	private final String fileNameWithAbsolutePath;
 
 	private final String fileNameWithRelativePath;
@@ -39,8 +38,6 @@ public class ClassPathResource extends LoadableResource {
 	private final ClassLoader classLoader;
 
 	private final Charset encoding;
-
-	private final boolean detectEncoding;
 
 	private final String parentURL;
 
@@ -61,7 +58,6 @@ public class ClassPathResource extends LoadableResource {
 				: location.getPathRelativeToThis(fileNameWithAbsolutePath);
 		this.classLoader = classLoader;
 		this.encoding = encoding;
-		this.detectEncoding = detectEncoding;
 		this.parentURL = parentURL;
 	}
 
@@ -97,7 +93,7 @@ public class ClassPathResource extends LoadableResource {
 		return new File(UrlUtils.decodeURL(path)).getAbsolutePath();
 	}
 
-	private URL getUrl() {
+	private @Nullable URL getUrl() {
 		try {
 			Enumeration<URL> urls = classLoader.getResources(fileNameWithAbsolutePath);
 			while (urls.hasMoreElements()) {
@@ -146,14 +142,13 @@ public class ClassPathResource extends LoadableResource {
 	}
 
 	@Override
-	public boolean equals(Object o) {
+	public boolean equals(@Nullable Object o) {
 		if (this == o) {
 			return true;
 		}
-		if (o == null || getClass() != o.getClass()) {
+		if (!(o instanceof ClassPathResource that)) {
 			return false;
 		}
-		ClassPathResource that = (ClassPathResource) o;
 		return fileNameWithAbsolutePath.equals(that.fileNameWithAbsolutePath) && parentURL.equals(that.parentURL);
 	}
 

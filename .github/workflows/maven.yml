@@ -24,6 +24,8 @@ jobs:
       # ubuntu-latest) and use SQLite files. The maven plugin is tested with the invoker.
       - name: Build, test and measure coverage
         run: ./mvnw $MAVEN_CLI_OPTS clean verify -Dcodecover
+      - name: Static analysis (NullAway, Checker Framework, Error Prone)
+        run: ./bin/analyze.sh
       - name: Upload test results
         uses: actions/upload-artifact@v4
         if: always()

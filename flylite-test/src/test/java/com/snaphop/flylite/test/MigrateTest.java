@@ -287,8 +287,6 @@ class MigrateTest {
 					""");
 		other.configure()
 			.locations(custom.location())
-			.scriptPlaceholderPrefix("FP|")
-			.scriptPlaceholderSuffix("|")
 			.placeholders(Map.of("tableName", "placeholders", "value", "replaced"))
 			.placeholderPrefix("#[")
 			.placeholderSuffix("]")
@@ -328,7 +326,7 @@ class MigrateTest {
 
 	@ParameterizedTest
 	@EnumSource(Db.class)
-	void scriptPlaceholdersAndEncoding(Db db) {
+	void encoding(Db db) {
 		var database = db.create(dir);
 		var migrations = new Migrations(dir.resolve("m")) //
 			.add("V1__Encoding.sql", "CREATE TABLE enc (v VARCHAR(10));\nINSERT INTO enc VALUES ('café');\n",

@@ -91,7 +91,7 @@ public final class CommandResultFactory {
 		Date installedOn = migrationInfo.getInstalledOn();
 		String installedBy = migrationInfo.getInstalledBy();
 		Integer executionTime = migrationInfo.getExecutionTime();
-		return new InfoOutput(getCategory(migrationInfo), version != null ? version.getVersion() : "",
+		return new InfoOutput(getCategory(migrationInfo), versionString(version),
 				version != null ? version.getRawVersion() : "", migrationInfo.getDescription(),
 				migrationInfo.getType().toString(), installedOn != null ? installedOn.toInstant().toString() : "",
 				migrationInfo.getState().getDisplayName(), physicalLocation(migrationInfo),
@@ -119,7 +119,8 @@ public final class CommandResultFactory {
 	}
 
 	private static String versionString(@Nullable MigrationVersion version) {
-		return version != null ? version.getVersion() : "";
+		String v = version == null ? null : version.getVersion();
+		return v == null ? "" : v;
 	}
 
 	private static String physicalLocation(MigrationInfo migrationInfo) {

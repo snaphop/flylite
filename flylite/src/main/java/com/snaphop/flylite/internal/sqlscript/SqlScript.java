@@ -27,22 +27,26 @@ import java.util.Collection;
 public interface SqlScript extends Comparable<SqlScript> {
 
 	/**
+	 * Returns the sql statements contained in this script.
 	 * @return The sql statements contained in this script.
 	 */
 	SqlStatementIterator getSqlStatements();
 
 	/**
+	 * Returns the number of sql statements contained in this script.
 	 * @return The number of sql statements contained in this script.
 	 */
 	int getSqlStatementCount();
 
 	/**
+	 * Returns the external SQL scripts referenced directly or indirectly by this SQL
 	 * @return The external SQL scripts referenced directly or indirectly by this SQL
 	 * script.
 	 */
 	Collection<SqlScript> getReferencedSqlScripts();
 
 	/**
+	 * Returns the resource containing the statements.
 	 * @return The resource containing the statements.
 	 */
 	LoadableResource getResource();

@@ -88,6 +88,7 @@ public class DbValidate {
 	}
 
 	/**
+	 * Returns the validation error, if any.
 	 * @return The validation error, if any.
 	 */
 	public ValidateResult validate() {

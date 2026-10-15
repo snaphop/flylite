@@ -53,18 +53,21 @@ import com.snaphop.flylite.api.MigrationVersion;
 public interface JavaMigration {
 
 	/**
+	 * Returns the version of the schema after the migration is complete. {@code null} for
 	 * @return The version of the schema after the migration is complete. {@code null} for
 	 * repeatable migrations.
 	 */
 	@Nullable MigrationVersion getVersion();
 
 	/**
+	 * Returns the description of this migration for the migration history. Never
 	 * @return The description of this migration for the migration history. Never
 	 * {@code null}.
 	 */
 	String getDescription();
 
 	/**
+	 * Returns the checksum of this migration.
 	 * @return The checksum of this migration.
 	 */
 	@Nullable Integer getChecksum();

@@ -73,6 +73,7 @@ public class FlyliteSqlScriptException extends FlyliteSqlException {
 	}
 
 	/**
+	 * Returns the resource containing the failed statement.
 	 * @return The resource containing the failed statement.
 	 */
 	public Resource getResource() {

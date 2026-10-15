@@ -24,9 +24,9 @@ public class StatementType {
 
 	/**
 	 * Whether the character should be treated as if it is a letter; this allows statement
-	 * types to handle characters that appear in specific contexts
-	 * @param c
-	 * @return
+	 * types to handle characters that appear in specific contexts.
+	 * @param c the character.
+	 * @return true if the character is part of a word.
 	 */
 	public boolean treatAsIfLetter(char c) {
 		return false;

@@ -162,7 +162,7 @@ public class DbRepair {
 			boolean isMigrationIgnored = configuration.getIgnoreMigrationPatterns()
 				.stream()
 				.anyMatch(p -> p.matchesMigration(migrationInfoImpl.getVersion() != null, state));
-			if (isMigrationMissing && !isMigrationIgnored) {
+			if (applied != null && isMigrationMissing && !isMigrationIgnored) {
 				schemaHistory.delete(applied);
 				removed = true;
 				repairResult.migrationsDeleted.add(CommandResultFactory.createRepairOutput(migrationInfo));

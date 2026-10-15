@@ -33,17 +33,33 @@ public final class ClassUtils {
 	 * Creates a new instance of this class.
 	 * @param className the fully qualified name of the class to instantiate.
 	 * @param classLoader the ClassLoader to use.
+	 * @param type the expected type.
 	 * @param <T> the expected type.
 	 * @return the new instance.
 	 * @throws FlyliteException thrown when the instantiation failed.
 	 */
-	@SuppressWarnings({ "unchecked" })
-	public static <T> T instantiate(String className, ClassLoader classLoader) {
+	public static <T> T instantiate(String className, ClassLoader classLoader, Class<T> type) {
 		try {
-			return (T) Class.forName(className, true, classLoader).getDeclaredConstructor().newInstance();
+			return type.cast(Class.forName(className, true, classLoader).getDeclaredConstructor().newInstance());
 		}
 		catch (Exception e) {
 			throw new FlyliteException("Unable to instantiate class " + className + " : " + e.getMessage(), e);
+		}
+	}
+
+	/**
+	 * Creates a new instance of this class.
+	 * @param clazz the class to instantiate.
+	 * @param <T> the type.
+	 * @return the new instance.
+	 * @throws FlyliteException thrown when the instantiation failed.
+	 */
+	public static <T> T instantiate(Class<T> clazz) {
+		try {
+			return clazz.getDeclaredConstructor().newInstance();
+		}
+		catch (Exception e) {
+			throw new FlyliteException("Unable to instantiate class " + clazz.getName() + " : " + e.getMessage(), e);
 		}
 	}
 

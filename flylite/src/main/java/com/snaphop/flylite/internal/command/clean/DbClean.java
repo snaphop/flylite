@@ -16,7 +16,6 @@
  */
 package com.snaphop.flylite.internal.command.clean;
 
-import com.snaphop.flylite.internal.logging.Log;
 import com.snaphop.flylite.api.FlyliteException;
 import com.snaphop.flylite.api.callback.Event;
 import com.snaphop.flylite.api.configuration.Configuration;
@@ -30,8 +29,6 @@ import com.snaphop.flylite.internal.schemahistory.SchemaHistory;
 import java.util.List;
 
 public class DbClean {
-
-	private static final Log LOG = Log.of(DbClean.class);
 
 	private final SchemaHistory schemaHistory;
 

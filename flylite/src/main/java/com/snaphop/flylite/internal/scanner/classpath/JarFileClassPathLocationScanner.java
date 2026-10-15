@@ -41,6 +41,7 @@ public class JarFileClassPathLocationScanner implements ClassPathLocationScanner
 	 */
 	private final String separator;
 
+	@Override
 	public Set<String> findResourceNames(String location, URL locationUrl) {
 		JarFile jarFile;
 		try {
@@ -60,6 +61,7 @@ public class JarFileClassPathLocationScanner implements ClassPathLocationScanner
 				jarFile.close();
 			}
 			catch (IOException e) {
+				LOG.debug("Unable to close " + jarFile.getName() + ": " + e.getMessage());
 			}
 		}
 		// Ignore
@@ -73,9 +75,8 @@ public class JarFileClassPathLocationScanner implements ClassPathLocationScanner
 	 */
 	private JarFile getJarFromUrl(URL locationUrl) throws IOException {
 		URLConnection con = locationUrl.openConnection();
-		if (con instanceof JarURLConnection) {
+		if (con instanceof JarURLConnection jarCon) {
 			// Should usually be the case for traditional JAR files.
-			JarURLConnection jarCon = (JarURLConnection) con;
 			jarCon.setUseCaches(false);
 			return jarCon.getJarFile();
 		}

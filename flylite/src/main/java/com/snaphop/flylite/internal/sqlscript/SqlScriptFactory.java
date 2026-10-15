@@ -16,14 +16,17 @@
  */
 package com.snaphop.flylite.internal.sqlscript;
 
+import org.jspecify.annotations.Nullable;
+
 import com.snaphop.flylite.api.ResourceProvider;
 import com.snaphop.flylite.api.resource.LoadableResource;
 
 public interface SqlScriptFactory {
 
 	/**
+	 * Returns a new SQL script.
 	 * @return A new SQL script.
 	 */
-	SqlScript createSqlScript(LoadableResource resource, boolean mixed, ResourceProvider resourceProvider);
+	SqlScript createSqlScript(LoadableResource resource, boolean mixed, @Nullable ResourceProvider resourceProvider);
 
 }

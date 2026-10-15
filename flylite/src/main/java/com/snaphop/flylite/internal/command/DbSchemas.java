@@ -119,6 +119,8 @@ public class DbSchemas {
 					Thread.sleep(1000);
 				}
 				catch (InterruptedException e1) {
+					Thread.currentThread().interrupt();
+					throw new FlyliteException("Interrupted while retrying", e1);
 				}
 			}
 			// Ignore

@@ -37,6 +37,9 @@ public abstract class Connection<D extends Database<?>> implements Closeable {
 
 	private final boolean originalAutoCommit;
 
+	// Checker Framework: overridable methods are called while the object is under
+	// initialization
+	@SuppressWarnings("method.invocation")
 	protected Connection(D database, java.sql.Connection connection) {
 		this.database = database;
 
@@ -61,6 +64,8 @@ public abstract class Connection<D extends Database<?>> implements Closeable {
 	}
 
 	/**
+	 * Retrieves the current schema name or search path of the connection.
+	 * @return the schema name or search path.
 	 * @throws SQLException when the current schema name or search path could not be
 	 * retrieved.
 	 */
@@ -97,6 +102,7 @@ public abstract class Connection<D extends Database<?>> implements Closeable {
 	}
 
 	/**
+	 * Changes the current schema or search path of the connection.
 	 * @param schemaNameOrSearchPath The new current schema for this connection.
 	 * @throws SQLException when the current schema could not be set.
 	 */

@@ -16,64 +16,48 @@
  */
 package com.snaphop.flylite.internal.util;
 
-import java.util.Arrays;
+import java.util.Objects;
 
-public class Pair<L, R> implements Comparable<Pair<L, R>> {
+import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
+
+/**
+ * A pair of non null values.
+ *
+ * @param <L> left type.
+ * @param <R> right type.
+ */
+public final class Pair<L extends @NonNull Object, R extends @NonNull Object> {
 
 	private final L left;
 
 	private final R right;
 
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
-		if (o == null || getClass() != o.getClass()) {
-			return false;
-		}
-		Pair<?, ?> pair = (Pair<?, ?>) o;
-		return left.equals(pair.left) && right.equals(pair.right);
-	}
-
-	@Override
-	public int hashCode() {
-		return Arrays.hashCode(new Object[] { left, right });
-	}
-
-	@SuppressWarnings("unchecked")
-	@Override
-	public int compareTo(Pair<L, R> o) {
-		if (left instanceof Comparable<?>) {
-			int l = ((Comparable<L>) left).compareTo(o.left);
-			if (l != 0) {
-				return l;
-			}
-		}
-		if (right instanceof Comparable<?>) {
-			int r = ((Comparable<R>) right).compareTo(o.right);
-			if (r != 0) {
-				return r;
-			}
-		}
-		return 0;
-	}
-
-	private Pair(final L left, final R right) {
+	private Pair(L left, R right) {
 		this.left = left;
 		this.right = right;
 	}
 
-	public static <L, R> Pair<L, R> of(final L left, final R right) {
-		return new Pair<L, R>(left, right);
+	public static <L extends @NonNull Object, R extends @NonNull Object> Pair<L, R> of(L left, R right) {
+		return new Pair<>(left, right);
 	}
 
 	public L getLeft() {
-		return this.left;
+		return left;
 	}
 
 	public R getRight() {
-		return this.right;
+		return right;
+	}
+
+	@Override
+	public boolean equals(@Nullable Object o) {
+		return o instanceof Pair<?, ?> pair && left.equals(pair.left) && right.equals(pair.right);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(left, right);
 	}
 
 }

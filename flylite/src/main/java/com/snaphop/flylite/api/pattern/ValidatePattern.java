@@ -39,6 +39,8 @@ public final class ValidatePattern {
 
 	private final String pattern;
 
+	// String.split drops trailing empty strings, which is relied upon here
+	@SuppressWarnings("StringSplitter")
 	public static ValidatePattern fromPattern(String pattern) {
 		String[] patternParts = pattern.split(":");
 		if (patternParts.length != 2) {

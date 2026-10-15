@@ -288,18 +288,6 @@ abstract class AbstractFlyliteMojo extends AbstractMojo {
 	@Nullable String placeholderSeparator;
 
 	/**
-	 * The prefix of every script placeholder.
-	 */
-	@Parameter(property = "flylite.scriptPlaceholderPrefix")
-	@Nullable String scriptPlaceholderPrefix;
-
-	/**
-	 * The suffix of every script placeholder.
-	 */
-	@Parameter(property = "flylite.scriptPlaceholderSuffix")
-	@Nullable String scriptPlaceholderSuffix;
-
-	/**
 	 * Whether the SQL callbacks found in the locations should be skipped.
 	 */
 	@Parameter(property = "flylite.skipDefaultCallbacks")
@@ -334,7 +322,8 @@ abstract class AbstractFlyliteMojo extends AbstractMojo {
 	 * The Maven project this plugin runs in.
 	 */
 	@Parameter(defaultValue = "${project}", readonly = true, required = true)
-	@SuppressWarnings("NullAway.Init")
+	// injected by Maven
+	@SuppressWarnings({ "NullAway.Init", "initialization.field.uninitialized" })
 	MavenProject mavenProject;
 
 	@Override
@@ -348,7 +337,7 @@ abstract class AbstractFlyliteMojo extends AbstractMojo {
 			doExecute(configure(classLoader).load());
 		}
 		catch (FlyliteException e) {
-			throw new MojoExecutionException(e.getMessage(), e);
+			throw new MojoExecutionException(String.valueOf(e.getMessage()), e);
 		}
 		catch (MojoExecutionException e) {
 			throw e;
@@ -461,12 +450,6 @@ abstract class AbstractFlyliteMojo extends AbstractMojo {
 		if (placeholderSeparator != null) {
 			c.placeholderSeparator(placeholderSeparator);
 		}
-		if (scriptPlaceholderPrefix != null) {
-			c.scriptPlaceholderPrefix(scriptPlaceholderPrefix);
-		}
-		if (scriptPlaceholderSuffix != null) {
-			c.scriptPlaceholderSuffix(scriptPlaceholderSuffix);
-		}
 		if (skipDefaultCallbacks != null) {
 			c.skipDefaultCallbacks(skipDefaultCallbacks);
 		}
@@ -557,12 +540,24 @@ abstract class AbstractFlyliteMojo extends AbstractMojo {
 
 		@Override
 		public void log(Level level, String message, @Nullable Throwable throwable) {
-			switch (level) {
-				case ALL, TRACE, DEBUG -> log.debug(message, throwable);
-				case INFO -> log.info(message, throwable);
-				case WARNING -> log.warn(message, throwable);
-				case ERROR -> log.error(message, throwable);
-				case OFF -> {
+			if (throwable == null) {
+				switch (level) {
+					case ALL, TRACE, DEBUG -> log.debug(message);
+					case INFO -> log.info(message);
+					case WARNING -> log.warn(message);
+					case ERROR -> log.error(message);
+					case OFF -> {
+					}
+				}
+			}
+			else {
+				switch (level) {
+					case ALL, TRACE, DEBUG -> log.debug(message, throwable);
+					case INFO -> log.info(message, throwable);
+					case WARNING -> log.warn(message, throwable);
+					case ERROR -> log.error(message, throwable);
+					case OFF -> {
+					}
 				}
 			}
 		}

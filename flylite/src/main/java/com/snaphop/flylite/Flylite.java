@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.snaphop.flylite.api.ErrorCode;
+import com.snaphop.flylite.api.ErrorDetails;
 import com.snaphop.flylite.api.FlyliteException;
 import com.snaphop.flylite.api.MigrationInfoService;
 import com.snaphop.flylite.api.callback.Event;
@@ -114,7 +115,7 @@ public final class Flylite {
 				ignorePatterns.add(ValidatePattern.fromPattern("*:pending"));
 				ValidateResult validateResult = doValidate(ctx, ignorePatterns);
 				if (!validateResult.validationSuccessful) {
-					throw new FlyliteValidateException(validateResult.errorDetails,
+					throw new FlyliteValidateException(validationError(validateResult),
 							validateResult.getAllErrorMessages());
 				}
 			}
@@ -123,9 +124,10 @@ public final class Flylite {
 				new DbSchemas(ctx.database(), ctx.schemas(), ctx.schemaHistory(), ctx.callbackExecutor()).create(false);
 			}
 			else if (!ctx.defaultSchema().exists()) {
-				LOG.warn("The configuration option 'createSchemas' is false.\n"
-						+ "However, the schema history table still needs a schema to reside in.\n"
-						+ "You must manually create a schema for the schema history table to reside in.");
+				LOG.warn("""
+						The configuration option 'createSchemas' is false.
+						However, the schema history table still needs a schema to reside in.
+						You must manually create a schema for the schema history table to reside in.""");
 			}
 
 			if (!ctx.schemaHistory().exists()) {
@@ -214,7 +216,7 @@ public final class Flylite {
 	public void validate() throws FlyliteException {
 		ValidateResult validateResult = validateWithResult();
 		if (!validateResult.validationSuccessful) {
-			throw new FlyliteValidateException(validateResult.errorDetails, validateResult.getAllErrorMessages());
+			throw new FlyliteValidateException(validationError(validateResult), validateResult.getAllErrorMessages());
 		}
 	}
 
@@ -244,9 +246,11 @@ public final class Flylite {
 				new DbSchemas(ctx.database(), ctx.schemas(), ctx.schemaHistory(), ctx.callbackExecutor()).create(true);
 			}
 			else {
-				LOG.warn("The configuration option 'createSchemas' is false.\n"
-						+ "Even though Flylite is configured not to create any schemas, the schema history table still needs a schema to reside in.\n"
-						+ "You must manually create a schema for the schema history table to reside in.");
+				LOG.warn("""
+						The configuration option 'createSchemas' is false.
+						Even though Flylite is configured not to create any schemas, the schema history table \
+						still needs a schema to reside in.
+						You must manually create a schema for the schema history table to reside in.""");
 			}
 			BaselineResult baselineResult = doBaseline(ctx);
 			ctx.callbackExecutor().onOperationFinishEvent(Event.AFTER_BASELINE_OPERATION_FINISH, baselineResult);
@@ -273,6 +277,12 @@ public final class Flylite {
 			ctx.callbackExecutor().onOperationFinishEvent(Event.AFTER_REPAIR_OPERATION_FINISH, repairResult);
 			return repairResult;
 		}, true);
+	}
+
+	private static ErrorDetails validationError(ValidateResult validateResult) {
+		ErrorDetails errorDetails = validateResult.errorDetails;
+		return errorDetails != null ? errorDetails
+				: new ErrorDetails(ErrorCode.VALIDATE_ERROR, "Migrations have failed validation");
 	}
 
 	private ValidateResult doValidate(FlyliteExecutor.Context ctx, List<ValidatePattern> ignorePatterns) {

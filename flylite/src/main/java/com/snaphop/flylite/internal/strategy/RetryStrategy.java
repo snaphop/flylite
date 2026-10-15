@@ -74,7 +74,7 @@ public class RetryStrategy {
 	 * @param interruptionMessage The message to relay if interruption happens
 	 * @param retriesExceededMessage The message to relay if the number of retries is
 	 * exceeded
-	 * @throws SQLException
+	 * @throws SQLException if the callable fails.
 	 */
 	public void doWithRetries(SqlCallable<Boolean> callable, String interruptionMessage, String retriesExceededMessage)
 			throws SQLException {

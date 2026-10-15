@@ -19,6 +19,8 @@ package com.snaphop.flylite.internal.util;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.jspecify.annotations.Nullable;
+
 /**
  * An Ascii table.
  */
@@ -28,7 +30,7 @@ public class AsciiTable {
 
 	private final List<String> columns;
 
-	private final List<List<String>> rows;
+	private final List<List<@Nullable String>> rows;
 
 	private final boolean printHeader;
 
@@ -44,7 +46,7 @@ public class AsciiTable {
 	 * @param nullText The text to use for a {@code null} value.
 	 * @param emptyText The text to include in the table if it has no rows.
 	 */
-	public AsciiTable(List<String> columns, List<List<String>> rows, boolean printHeader, String nullText,
+	public AsciiTable(List<String> columns, List<List<@Nullable String>> rows, boolean printHeader, String nullText,
 			String emptyText) {
 		this.columns = ensureValidColumns(columns);
 		this.rows = rows;
@@ -62,6 +64,7 @@ public class AsciiTable {
 	}
 
 	/**
+	 * Returns the table rendered with column header and row data.
 	 * @return The table rendered with column header and row data.
 	 */
 	public String render() {
@@ -70,7 +73,7 @@ public class AsciiTable {
 			widths.add(column.length());
 		}
 
-		for (List<String> row : rows) {
+		for (List<@Nullable String> row : rows) {
 			for (int i = 0; i < row.size(); i++) {
 				widths.set(i, Math.max(widths.get(i), getValue(row, i).length()));
 			}
@@ -103,7 +106,7 @@ public class AsciiTable {
 				.append(" |\n");
 		}
 		else {
-			for (List<String> row : rows) {
+			for (List<@Nullable String> row : rows) {
 				StringBuilder r = new StringBuilder("|");
 				for (int i = 0; i < widths.size(); i++) {
 					r.append(" ").append(StringUtils.trimOrPad(getValue(row, i), widths.get(i), ' ')).append(" |");
@@ -117,7 +120,7 @@ public class AsciiTable {
 		return result.toString();
 	}
 
-	private String getValue(List<String> row, int i) {
+	private String getValue(List<@Nullable String> row, int i) {
 		String value = row.get(i);
 		if (value == null) {
 			value = nullText;

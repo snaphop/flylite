@@ -45,6 +45,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
 
@@ -119,7 +120,7 @@ public class MigrationInfoServiceImpl implements MigrationInfoService {
 
 		updateContextFromAppliedVersionedMigrations(appliedVersioned, context);
 
-		if (MigrationVersion.CURRENT == target) {
+		if (MigrationVersion.CURRENT.equals(target)) {
 			context.target = context.lastApplied;
 		}
 
@@ -127,7 +128,7 @@ public class MigrationInfoServiceImpl implements MigrationInfoService {
 
 		for (Pair<AppliedMigration, AppliedMigrationAttributes> av : appliedVersioned) {
 			ResolvedMigration resolvedMigration = resolvedVersioned
-				.get(Pair.of(av.getLeft().getVersion(), av.getLeft().getType()));
+				.get(Pair.of(Objects.requireNonNull(av.getLeft().getVersion()), av.getLeft().getType()));
 			migrationInfos1.add(new MigrationInfoImpl(resolvedMigration, av.getLeft(), context,
 					av.getRight().outOfOrder, av.getRight().deleted));
 		}
@@ -154,7 +155,7 @@ public class MigrationInfoServiceImpl implements MigrationInfoService {
 		Collections.sort(migrationInfos1);
 		migrationInfos = migrationInfos1;
 
-		if (context.target == MigrationVersion.NEXT) {
+		if (MigrationVersion.NEXT.equals(context.target)) {
 			MigrationInfo[] pendingMigrationInfos = pending();
 			if (pendingMigrationInfos.length == 0) {
 				context.target = null;
@@ -206,7 +207,8 @@ public class MigrationInfoServiceImpl implements MigrationInfoService {
 				context.schema = version;
 			}
 			if (appliedMigration.getType().isBaseline()) {
-				if (context.appliedBaseline == null || version.isNewerThan(context.appliedBaseline.getVersion())) {
+				MigrationVersion appliedBaseline = context.appliedBaseline;
+				if (appliedBaseline == null || version.compareTo(appliedBaseline) > 0) {
 					context.appliedBaseline = version;
 				}
 			}
@@ -241,15 +243,17 @@ public class MigrationInfoServiceImpl implements MigrationInfoService {
 		Set<ResolvedMigration> pendingResolvedVersionedMigrations = new HashSet<>(resolvedVersionedMigrations.values());
 		for (Pair<AppliedMigration, AppliedMigrationAttributes> av : appliedVersionedMigrations) {
 			ResolvedMigration resolvedMigration = resolvedVersionedMigrations
-				.get(Pair.of(av.getLeft().getVersion(), av.getLeft().getType()));
+				.get(Pair.of(Objects.requireNonNull(av.getLeft().getVersion()), av.getLeft().getType()));
 			if (resolvedMigration != null && !av.getRight().deleted && av.getLeft().getType() != MigrationType.DELETE) {
 				pendingResolvedVersionedMigrations.remove(resolvedMigration);
 			}
 		}
 		for (ResolvedMigration resolvedMigration : pendingResolvedVersionedMigrations) {
-			if (resolvedMigration.getType().isBaseline() && (context.pendingBaseline == null
-					|| resolvedMigration.getVersion().isNewerThan(context.pendingBaseline.getVersion()))) {
-				context.pendingBaseline = resolvedMigration.getVersion();
+			MigrationVersion version = Objects.requireNonNull(resolvedMigration.getVersion());
+			MigrationVersion pendingBaseline = context.pendingBaseline;
+			if (resolvedMigration.getType().isBaseline()
+					&& (pendingBaseline == null || version.compareTo(pendingBaseline) > 0)) {
+				context.pendingBaseline = version;
 			}
 		}
 		return pendingResolvedVersionedMigrations;
@@ -266,10 +270,10 @@ public class MigrationInfoServiceImpl implements MigrationInfoService {
 			int rank = appliedRepeatableMigration.getInstalledRank();
 
 			ResolvedMigration resolvedMigration = resolvedRepeatableMigrations.get(desc);
-			int latestRank = context.latestRepeatableRuns.get(desc);
+			Integer latestRank = context.latestRepeatableRuns.get(desc);
 
 			if (!av.getRight().deleted && av.getLeft().getType() != MigrationType.DELETE && resolvedMigration != null
-					&& rank == latestRank
+					&& latestRank != null && rank == latestRank
 					&& resolvedMigration.checksumMatches(appliedRepeatableMigration.getChecksum())) {
 				pendingResolvedVRepeatableMigrations.remove(resolvedMigration);
 			}
@@ -301,7 +305,7 @@ public class MigrationInfoServiceImpl implements MigrationInfoService {
 			MigrationInfoContext context) {
 		for (Pair<AppliedMigration, AppliedMigrationAttributes> av : appliedVersionedMigrations) {
 			AppliedMigration appliedMigration = av.getLeft();
-			MigrationVersion version = appliedMigration.getVersion();
+			MigrationVersion version = Objects.requireNonNull(appliedMigration.getVersion());
 			if (version.compareTo(context.lastApplied) > 0) {
 				if (av.getLeft().getType() != MigrationType.DELETE && !av.getRight().deleted
 						&& av.getLeft().isVersioned()) {
@@ -365,8 +369,9 @@ public class MigrationInfoServiceImpl implements MigrationInfoService {
 		@Nullable MigrationInfo current = null;
 		for (MigrationInfoImpl migrationInfo : migrationInfos) {
 			if (migrationInfo.getState().isApplied() && !MigrationState.DELETED.equals(migrationInfo.getState())
-					&& !migrationInfo.getType().equals(MigrationType.DELETE) && migrationInfo.isVersioned()
-					&& (current == null || migrationInfo.getVersion().compareTo(current.getVersion()) > 0)) {
+					&& !migrationInfo.getType().equals(MigrationType.DELETE) && migrationInfo.getVersion() != null
+					&& (current == null || Objects.requireNonNull(migrationInfo.getVersion())
+						.compareTo(current.getVersion()) > 0)) {
 				current = migrationInfo;
 			}
 		}
@@ -410,6 +415,7 @@ public class MigrationInfoServiceImpl implements MigrationInfoService {
 	}
 
 	/**
+	 * Returns the resolved migrations. An empty array if none.
 	 * @return The resolved migrations. An empty array if none.
 	 */
 	public MigrationInfo[] resolved() {
@@ -423,6 +429,7 @@ public class MigrationInfoServiceImpl implements MigrationInfoService {
 	}
 
 	/**
+	 * Returns the failed migrations. An empty array if none.
 	 * @return The failed migrations. An empty array if none.
 	 */
 	public MigrationInfoImpl[] failed() {
@@ -436,6 +443,7 @@ public class MigrationInfoServiceImpl implements MigrationInfoService {
 	}
 
 	/**
+	 * Returns the future migrations. An empty array if none.
 	 * @return The future migrations. An empty array if none.
 	 */
 	public MigrationInfo[] future() {
@@ -450,6 +458,7 @@ public class MigrationInfoServiceImpl implements MigrationInfoService {
 	}
 
 	/**
+	 * Returns the out-of-order migrations. An empty array if none.
 	 * @return The out-of-order migrations. An empty array if none.
 	 */
 	public MigrationInfo[] outOfOrder() {
@@ -463,6 +472,7 @@ public class MigrationInfoServiceImpl implements MigrationInfoService {
 	}
 
 	/**
+	 * Returns the list of migrations that failed validation, which is empty if everything
 	 * @return The list of migrations that failed validation, which is empty if everything
 	 * is fine.
 	 */

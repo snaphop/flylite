@@ -16,6 +16,7 @@
  */
 package com.snaphop.flylite.internal.database.postgresql;
 
+import org.jspecify.annotations.Nullable;
 import com.snaphop.flylite.internal.logging.Log;
 import com.snaphop.flylite.api.configuration.Configuration;
 import com.snaphop.flylite.internal.parser.*;
@@ -63,7 +64,7 @@ public class PostgreSQLParser extends Parser {
 			int statementLine, int statementCol, int nonCommentPartPos, int nonCommentPartLine, int nonCommentPartCol,
 			StatementType statementType, boolean canExecuteInTransaction, Delimiter delimiter, String sql)
 			throws IOException {
-		if (statementType == COPY) {
+		if (COPY.equals(statementType)) {
 			return new PostgreSQLCopyParsedStatement(nonCommentPartPos, nonCommentPartLine, nonCommentPartCol,
 					sql.substring(nonCommentPartPos - statementPos), readCopyData(reader, recorder));
 		}
@@ -118,7 +119,7 @@ public class PostgreSQLParser extends Parser {
 	}
 
 	@Override
-	protected Boolean detectCanExecuteInTransaction(String simplifiedStatement, List<Token> keywords) {
+	protected @Nullable Boolean detectCanExecuteInTransaction(String simplifiedStatement, List<Token> keywords) {
 		if (CREATE_DATABASE_TABLESPACE_SUBSCRIPTION_REGEX.matcher(simplifiedStatement).matches()
 				|| ALTER_SYSTEM_REGEX.matcher(simplifiedStatement).matches()
 				|| CREATE_INDEX_CONCURRENTLY_REGEX.matcher(simplifiedStatement).matches()
@@ -128,11 +129,14 @@ public class PostgreSQLParser extends Parser {
 			return false;
 		}
 		boolean isDBVerUnder12 = true;
-		try {
-			isDBVerUnder12 = !parsingContext.getDatabase().getVersion().isAtLeast("12");
-		}
-		catch (Exception e) {
-			LOG.debug("Unable to determine database version: " + e.getMessage());
+		var database = parsingContext.getDatabase();
+		if (database != null) {
+			try {
+				isDBVerUnder12 = !database.getVersion().isAtLeast("12");
+			}
+			catch (Exception e) {
+				LOG.debug("Unable to determine database version: " + e.getMessage());
+			}
 		}
 		if (isDBVerUnder12 && ALTER_TYPE_ADD_VALUE_REGEX.matcher(simplifiedStatement).matches()) {
 			return false;
@@ -150,7 +154,7 @@ public class PostgreSQLParser extends Parser {
 		String dollarQuote = (char) reader.read() + reader.readUntilIncluding('$');
 		reader.swallowUntilExcluding(dollarQuote);
 		reader.swallow(dollarQuote.length());
-		return new Token(TokenType.STRING, pos, line, col, null, null, context.getParensDepth());
+		return new Token(TokenType.STRING, pos, line, col, "", "", context.getParensDepth());
 	}
 
 }

@@ -16,81 +16,89 @@
  */
 package com.snaphop.flylite.api.resolver;
 
-import com.snaphop.flylite.api.MigrationState;
+import org.jspecify.annotations.Nullable;
+
+import com.snaphop.flylite.api.MigrationType;
 import com.snaphop.flylite.api.MigrationVersion;
 import com.snaphop.flylite.api.executor.MigrationExecutor;
-import com.snaphop.flylite.api.MigrationType;
-import com.snaphop.flylite.internal.info.MigrationInfoContext;
 
 /**
  * Migration resolved through a MigrationResolver. Can be applied against a database.
  */
-public interface ResolvedMigration extends ChecksumMatcher {
+public interface ResolvedMigration {
 
 	/**
-	 * @return The version of the database after applying this migration. {@code null} for
-	 * repeatable migrations.
+	 * The version of the database after applying this migration.
+	 * @return version or {@code null} for repeatable migrations.
 	 */
-	MigrationVersion getVersion();
+	@Nullable MigrationVersion getVersion();
 
+	/**
+	 * Whether this is a versioned migration.
+	 * @return true if versioned.
+	 */
 	default boolean isVersioned() {
 		return getVersion() != null;
 	}
 
 	/**
-	 * @return The description of the migration.
+	 * The description of the migration.
+	 * @return description.
 	 */
 	String getDescription();
 
 	/**
-	 * @return The name of the script to execute for this migration, relative to its base
+	 * The name of the script to execute for this migration, relative to its base
 	 * (classpath/filesystem) location.
+	 * @return script.
 	 */
 	String getScript();
 
 	/**
-	 * @return The checksum of the migration. Optional. Can be {@code null} if not unique
-	 * checksum is computable.
+	 * The checksum of the migration.
+	 * @return checksum or {@code null} if no unique checksum is computable.
 	 */
-	Integer getChecksum();
+	@Nullable Integer getChecksum();
 
 	/**
-	 * @return The type of migration (INIT, SQL, ...)
+	 * The type of migration (SQL, JDBC, ...).
+	 * @return type.
 	 */
 	MigrationType getType();
 
 	/**
-	 * @return The physical location of the migration on disk. Used for more precise error
+	 * The physical location of the migration on disk. Used for more precise error
 	 * reporting in case of conflict.
+	 * @return location or {@code null} if unknown.
 	 */
-	String getPhysicalLocation();
+	@Nullable String getPhysicalLocation();
 
 	/**
-	 * @return The executor to run this migration.
+	 * The executor to run this migration.
+	 * @return executor.
 	 */
 	MigrationExecutor getExecutor();
 
-	default MigrationState getState(MigrationInfoContext context) {
-		if (getVersion() != null) {
-			if (getVersion().compareTo(context.lastApplied == MigrationVersion.EMPTY ? context.pendingBaseline
-					: context.appliedBaseline) < 0) {
-				return MigrationState.BELOW_BASELINE;
-			}
-			if (getVersion().compareTo(context.lastApplied == MigrationVersion.EMPTY ? context.pendingBaseline
-					: context.appliedBaseline) == 0) {
-				return MigrationState.BASELINE_IGNORED;
-			}
-			if (context.target != null && context.target != MigrationVersion.NEXT
-					&& getVersion().compareTo(context.target) > 0) {
-				return MigrationState.ABOVE_TARGET;
-			}
-			if ((getVersion().compareTo(context.lastApplied) < 0) && !context.outOfOrder) {
-				return MigrationState.IGNORED;
-			}
-		}
-		return MigrationState.PENDING;
-	}
+	/**
+	 * Whether the checksum of an applied migration matches this one.
+	 * @param checksum checksum of the applied migration.
+	 * @return true if it matches.
+	 */
+	boolean checksumMatches(@Nullable Integer checksum);
 
+	/**
+	 * Whether the checksum of an applied migration matches this one without being the
+	 * same checksum.
+	 * @param checksum checksum of the applied migration.
+	 * @return true if it matches but is not identical.
+	 */
+	boolean checksumMatchesWithoutBeingIdentical(@Nullable Integer checksum);
+
+	/**
+	 * Whether this migration can be compared with the other one for duplicates.
+	 * @param o other.
+	 * @return true by default.
+	 */
 	default boolean canCompareWith(ResolvedMigration o) {
 		return true;
 	}

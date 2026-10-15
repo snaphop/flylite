@@ -23,6 +23,7 @@ import java.net.URL;
  */
 public class DefaultUrlResolver implements UrlResolver {
 
+	@Override
 	public URL toStandardJavaUrl(URL url) {
 		return url;
 	}

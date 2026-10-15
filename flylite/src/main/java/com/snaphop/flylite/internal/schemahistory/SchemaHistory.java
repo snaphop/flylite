@@ -16,6 +16,8 @@
  */
 package com.snaphop.flylite.internal.schemahistory;
 
+import org.jspecify.annotations.Nullable;
+
 import com.snaphop.flylite.api.MigrationType;
 import com.snaphop.flylite.api.MigrationVersion;
 import com.snaphop.flylite.api.output.RepairResult;
@@ -43,7 +45,11 @@ public abstract class SchemaHistory {
 	 * The schema history table used by Flylite. Non-final due to the table name fallback
 	 * mechanism. Will be made final in Flylite 6.0.
 	 */
-	protected Table<?, ?> table;
+	protected final Table<?, ?> table;
+
+	protected SchemaHistory(Table<?, ?> table) {
+		this.table = table;
+	}
 
 	/**
 	 * Acquires an exclusive read-write lock on the schema history table. This lock will
@@ -53,6 +59,7 @@ public abstract class SchemaHistory {
 	public abstract <T> T lock(Callable<T> callable);
 
 	/**
+	 * Returns whether the schema history table exists.
 	 * @return Whether the schema history table exists.
 	 */
 	public abstract boolean exists();
@@ -78,6 +85,7 @@ public abstract class SchemaHistory {
 	}
 
 	/**
+	 * Returns the list of all migrations applied on the schema in the order they were
 	 * @return The list of all migrations applied on the schema in the order they were
 	 * applied (oldest first). An empty list if no migration has been applied so far.
 	 */
@@ -87,7 +95,7 @@ public abstract class SchemaHistory {
 	 * Retrieves the baseline marker from the schema history table.
 	 * @return The baseline marker or {@code null} if none could be found.
 	 */
-	public final AppliedMigration getBaselineMarker() {
+	public final @Nullable AppliedMigration getBaselineMarker() {
 		List<AppliedMigration> appliedMigrations = allAppliedMigrations();
 		// BASELINE can only be the first or second (in case there is a SCHEMA one)
 		// migration.
@@ -111,7 +119,6 @@ public abstract class SchemaHistory {
 	 * </p>
 	 * @param repairResult The result object containing which failed migrations were
 	 * removed.
-	 * @param migrationPatternFilter The migration patterns to filter by.
 	 */
 	public abstract boolean removeFailedMigrations(RepairResult repairResult);
 
@@ -173,8 +180,8 @@ public abstract class SchemaHistory {
 	 * @param executionTime The execution time (in millis) of this migration.
 	 * @param success Flag indicating whether the migration was successful or not.
 	 */
-	public final void addAppliedMigration(MigrationVersion version, String description, MigrationType type,
-			String script, Integer checksum, int executionTime, boolean success) {
+	public final void addAppliedMigration(@Nullable MigrationVersion version, String description, MigrationType type,
+			String script, @Nullable Integer checksum, int executionTime, boolean success) {
 		int installedRank = calculateInstalledRank(type);
 		doAddAppliedMigration(installedRank, version, AbbreviationUtils.abbreviateDescription(description), type,
 				AbbreviationUtils.abbreviateScript(script), checksum, executionTime, success);
@@ -193,8 +200,9 @@ public abstract class SchemaHistory {
 		return appliedMigrations.get(appliedMigrations.size() - 1).getInstalledRank() + 1;
 	}
 
-	protected abstract void doAddAppliedMigration(int installedRank, MigrationVersion version, String description,
-			MigrationType type, String script, Integer checksum, int executionTime, boolean success);
+	protected abstract void doAddAppliedMigration(int installedRank, @Nullable MigrationVersion version,
+			String description, MigrationType type, String script, @Nullable Integer checksum, int executionTime,
+			boolean success);
 
 	@Override
 	public String toString() {

@@ -27,9 +27,6 @@ public class AbbreviationUtils {
 	 * @return The abbreviated version.
 	 */
 	public static String abbreviateDescription(String description) {
-		if (description == null) {
-			return null;
-		}
 		if (description.length() <= 200) {
 			return description;
 		}
@@ -42,9 +39,6 @@ public class AbbreviationUtils {
 	 * @return The abbreviated version.
 	 */
 	public static String abbreviateScript(String script) {
-		if (script == null) {
-			return null;
-		}
 		if (script.length() <= 1000) {
 			return script;
 		}

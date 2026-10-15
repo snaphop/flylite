@@ -66,8 +66,8 @@ public abstract class BaseJavaMigration implements JavaMigration {
 		}
 		var info = MigrationInfoHelper.extractVersionAndDescription(shortName, shortName.substring(0, 1), "__",
 				new String[] { "" }, repeatable);
-		this.version = info.getLeft();
-		this.description = info.getRight();
+		this.version = info.version();
+		this.description = info.description();
 	}
 
 	@Override
