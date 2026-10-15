@@ -140,7 +140,10 @@ public final class Flylite {
 					if (configuration.isBaselineOnMigrate()) {
 						doBaseline(ctx);
 					}
-					else {
+					else if (!ctx.schemaHistory().exists()) {
+						// Checked again because a concurrent migrate may have created the
+						// schema history table and its first objects since the check
+						// above.
 						throw new FlyliteException(
 								"Found non-empty schema(s) "
 										+ StringUtils.collectionToCommaDelimitedString(nonEmptySchemas)

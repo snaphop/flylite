@@ -81,7 +81,20 @@ public class ClassPathResource extends LoadableResource {
 		if (url == null) {
 			throw new FlyliteException("Unable to find resource on disk: " + fileNameWithAbsolutePath);
 		}
-		return new File(UrlUtils.decodeURL(url.getPath())).getAbsolutePath();
+		String path = url.getPath();
+		int separator = path.indexOf("!/");
+		if ("jar".equals(url.getProtocol()) && separator > 0) {
+			// jar:file:/app/lib.jar!/db/migration/V1__x.sql ->
+			// /app/lib.jar!/db/migration/V1__x.sql
+			String jar = path.substring(0, separator);
+			try {
+				return new File(new java.net.URI(jar)).getAbsolutePath() + path.substring(separator);
+			}
+			catch (java.net.URISyntaxException | IllegalArgumentException e) {
+				return UrlUtils.decodeURL(path);
+			}
+		}
+		return new File(UrlUtils.decodeURL(path)).getAbsolutePath();
 	}
 
 	private URL getUrl() {
