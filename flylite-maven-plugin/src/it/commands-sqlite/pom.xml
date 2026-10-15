@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>com.snaphop.flylite.it</groupId>
+  <artifactId>commands-sqlite</artifactId>
+  <version>1.0</version>
+  <packaging>pom</packaging>
+  <description>Runs every goal against SQLite with the default location, configured by properties.</description>
+  <properties>
+    <flylite.url>jdbc:sqlite:${project.basedir}/it.db</flylite.url>
+  </properties>
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>@project.groupId@</groupId>
+        <artifactId>@project.artifactId@</artifactId>
+        <version>@project.version@</version>
+        <configuration>
+          <cleanDisabled>false</cleanDisabled>
+          <baselineDescription>it baseline</baselineDescription>
+          <table>it_history</table>
+          <installedBy>invoker</installedBy>
+          <connectRetries>0</connectRetries>
+          <connectRetriesInterval>1</connectRetriesInterval>
+          <createSchemas>true</createSchemas>
+          <baselineOnMigrate>false</baselineOnMigrate>
+          <encoding>UTF-8</encoding>
+          <sqlMigrationPrefix>V</sqlMigrationPrefix>
+          <repeatableSqlMigrationPrefix>R</repeatableSqlMigrationPrefix>
+          <sqlMigrationSeparator>__</sqlMigrationSeparator>
+          <sqlMigrationSuffixes>
+            <sqlMigrationSuffix>.sql</sqlMigrationSuffix>
+          </sqlMigrationSuffixes>
+          <executeInTransaction>true</executeInTransaction>
+          <mixed>false</mixed>
+          <group>false</group>
+          <outOfOrder>false</outOfOrder>
+          <ignoreMigrationPatterns>
+            <ignoreMigrationPattern>*:future</ignoreMigrationPattern>
+          </ignoreMigrationPatterns>
+          <validateMigrationNaming>true</validateMigrationNaming>
+          <validateOnMigrate>true</validateOnMigrate>
+          <placeholderReplacement>true</placeholderReplacement>
+          <placeholderPrefix>${</placeholderPrefix>
+          <placeholderSuffix>}</placeholderSuffix>
+          <placeholderSeparator>:</placeholderSeparator>
+          <scriptPlaceholderPrefix>FP__</scriptPlaceholderPrefix>
+          <scriptPlaceholderSuffix>__</scriptPlaceholderSuffix>
+          <skipDefaultCallbacks>false</skipDefaultCallbacks>
+          <lockRetryCount>10</lockRetryCount>
+          <failOnMissingLocations>true</failOnMissingLocations>
+          <postgresqlTransactionalLock>true</postgresqlTransactionalLock>
+          <jdbcProperties>
+            <busy_timeout>1000</busy_timeout>
+          </jdbcProperties>
+          <initSql>SELECT 1</initSql>
+        </configuration>
+        <dependencies>
+          <dependency>
+            <groupId>org.xerial</groupId>
+            <artifactId>sqlite-jdbc</artifactId>
+            <version>@sqlite.version@</version>
+          </dependency>
+        </dependencies>
+      </plugin>
+    </plugins>
+  </build>
+</project>

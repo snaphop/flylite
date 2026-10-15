@@ -80,3 +80,22 @@ JBoss VFS/OSGi scanning, pluggable loggers and the HTML/JSON reports.
 ## License
 
 Apache License 2.0. See [NOTICE](NOTICE).
+
+## Building
+
+```bash
+./mvnw clean verify -Dcodecover
+```
+
+Docker is required: the end to end tests in `flylite-test` run every scenario against
+SQLite and PostgreSQL (Testcontainers), including Flyway 9.19.1 compatibility checks and
+tests ported from Flyway's own (removed) test suite. The Maven plugin is tested with the
+maven-invoker-plugin. See [AGENTS.md](AGENTS.md).
+
+## PostgreSQL notes
+
+* Like Flyway, migrate holds a transaction scoped advisory lock by default. Migrations
+  using `CREATE INDEX CONCURRENTLY` need `postgresqlTransactionalLock(false)`, otherwise
+  the statement waits forever for the lock's transaction.
+* With the transactional lock a failed non-transactional migration is not recorded in
+  the schema history table (also the same as Flyway).

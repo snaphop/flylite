@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>com.snaphop.flylite</groupId>
+    <artifactId>flylite-maven-parent</artifactId>
+    <version>0.1.0-SNAPSHOT</version>
+  </parent>
+  <artifactId>flylite-coverage-aggregate</artifactId>
+  <name>flylite-coverage-aggregate</name>
+  <packaging>pom</packaging>
+  <!--
+    Not published. Exists solely so that jacoco:report-aggregate has one place to hang
+    its dependency list. report-aggregate only merges the execution data of modules that
+    are compile/runtime/provided dependencies of this module (a test scoped dependency is
+    invisible to it), hence runtime + optional.
+
+    Run with: ./mvnw clean verify -Dcodecover
+    Report:   flylite-coverage-aggregate/target/site/jacoco-aggregate/index.html
+  -->
+  <properties>
+    <parent.root>${basedir}/..</parent.root>
+    <maven.deploy.skip>true</maven.deploy.skip>
+    <maven.install.skip>true</maven.install.skip>
+  </properties>
+  <dependencies>
+    <dependency>
+      <groupId>${project.groupId}</groupId>
+      <artifactId>flylite</artifactId>
+      <scope>runtime</scope>
+      <optional>true</optional>
+    </dependency>
+    <dependency>
+      <groupId>${project.groupId}</groupId>
+      <artifactId>flylite-maven-plugin</artifactId>
+      <scope>runtime</scope>
+      <optional>true</optional>
+    </dependency>
+    <dependency>
+      <!-- the end to end tests: almost all coverage of flylite comes from here -->
+      <groupId>${project.groupId}</groupId>
+      <artifactId>flylite-test</artifactId>
+      <version>${project.version}</version>
+      <scope>runtime</scope>
+      <optional>true</optional>
+    </dependency>
+  </dependencies>
+  <profiles>
+    <profile>
+      <id>codecover</id>
+      <activation>
+        <property>
+          <name>codecover</name>
+        </property>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.jacoco</groupId>
+            <artifactId>jacoco-maven-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>report-aggregate</id>
+                <phase>verify</phase>
+                <goals>
+                  <goal>report-aggregate</goal>
+                </goals>
+                <configuration>
+                  <dataFileIncludes>
+                    <dataFileInclude>**/jacoco*.exec</dataFileInclude>
+                  </dataFileIncludes>
+                  <outputDirectory>${project.reporting.outputDirectory}/jacoco-aggregate</outputDirectory>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
+</project>

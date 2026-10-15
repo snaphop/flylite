@@ -521,5 +521,7 @@
   <modules>
     <module>flylite</module>
     <module>flylite-maven-plugin</module>
+    <module>flylite-test</module>
+    <module>flylite-coverage-aggregate</module>
   </modules>
 </project>
