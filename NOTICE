@@ -1,0 +1,13 @@
+Flylite
+Copyright 2026 Snaphop
+
+This product is a derivative work of Flyway (https://github.com/flyway/flyway),
+specifically the snaphop fork of Flyway 9.19.1.
+
+Flyway
+Copyright (C) Red Gate Software Ltd 2010-2023
+Licensed under the Apache License, Version 2.0.
+
+Files carrying the Red Gate copyright notice were derived from Flyway and have
+been modified by Snaphop (package names, removal of Lombok and of the
+commercial/plugin infrastructure, Java 21 language features, null annotations).

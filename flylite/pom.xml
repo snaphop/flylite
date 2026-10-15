@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>com.snaphop.flylite</groupId>
+    <artifactId>flylite-maven-parent</artifactId>
+    <version>0.1.0-SNAPSHOT</version>
+  </parent>
+  <artifactId>flylite</artifactId>
+  <name>flylite</name>
+  <description>Flylite database migrations for PostgreSQL and SQLite</description>
+  <properties>
+    <parent.root>${basedir}/..</parent.root>
+  </properties>
+  <dependencies>
+    <!--
+      Only needed for COPY ... FROM STDIN support in PostgreSQL migrations.
+      Applications supply their own driver.
+    -->
+    <dependency>
+      <groupId>org.postgresql</groupId>
+      <artifactId>postgresql</artifactId>
+      <optional>true</optional>
+      <scope>provided</scope>
+    </dependency>
+  </dependencies>
+</project>
