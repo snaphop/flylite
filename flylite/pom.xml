@@ -4,7 +4,7 @@
   <parent>
     <groupId>com.snaphop.flylite</groupId>
     <artifactId>flylite-maven-parent</artifactId>
-    <version>1.0.0</version>
+    <version>1.0.1-SNAPSHOT</version>
   </parent>
   <artifactId>flylite</artifactId>
   <name>flylite</name>
