@@ -97,4 +97,47 @@ class FlywayCompatibilityTest {
 		flylite.validate();
 	}
 
+	private static List<String> history(Db.TestDatabase database, String table) {
+		// everything except installed_on, installed_by and execution_time
+		return database.jdbc()
+			.strings("SELECT " + concat(database, "installed_rank", "version", "description", "type", "script",
+					"checksum", "success") + " FROM " + table + " ORDER BY installed_rank");
+	}
+
+	private static String concat(Db.TestDatabase database, String... columns) {
+		var parts = Arrays.stream(columns).map(c -> "COALESCE(CAST(" + c + " AS VARCHAR(1000)), 'NULL')").toList();
+		return String.join(" || '|' || ", parts);
+	}
+
+	@ParameterizedTest
+	@EnumSource(Db.class)
+	void schemaHistoryRowsAreIdentical(Db db) {
+		var migrations = new Migrations(dir.resolve("m")).standard();
+		var viaFlyway = db.create(dir);
+		var viaFlylite = db.create(dir);
+		String[] schemas = db == Db.POSTGRES ? new String[] { "app", "other" } : new String[0];
+		String table = db == Db.POSTGRES ? "app.flyway_schema_history" : "flyway_schema_history";
+
+		Flyway.configure()
+			.dataSource(viaFlyway.url(), viaFlyway.user(), viaFlyway.password())
+			.locations(migrations.location())
+			.schemas(schemas)
+			.load()
+			.migrate();
+		viaFlylite.configure().locations(migrations.location()).schemas(schemas).load().migrate();
+		assertEquals(history(viaFlyway, table), history(viaFlylite, table));
+
+		var baselineFlyway = db.create(dir);
+		var baselineFlylite = db.create(dir);
+		Flyway.configure()
+			.dataSource(baselineFlyway.url(), baselineFlyway.user(), baselineFlyway.password())
+			.locations(migrations.location())
+			.baselineVersion("1.1")
+			.load()
+			.baseline();
+		baselineFlylite.configure().locations(migrations.location()).baselineVersion("1.1").load().baseline();
+		assertEquals(history(baselineFlyway, "flyway_schema_history"),
+				history(baselineFlylite, "flyway_schema_history"));
+	}
+
 }

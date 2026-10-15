@@ -120,7 +120,7 @@ public abstract class SchemaHistory {
 	 * @param schemas The schemas that were created by Flylite.
 	 */
 	public final void addSchemasMarker(List<Schema<?, ?>> schemas) {
-		addAppliedMigration(null, "<< Flyway Schema<?, ?> Creation >>", MigrationType.SCHEMA,
+		addAppliedMigration(null, "<< Flyway Schema Creation >>", MigrationType.SCHEMA,
 				StringUtils.collectionToDelimitedString(schemas, ","), null, 0, true);
 	}
 

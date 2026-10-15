@@ -64,12 +64,12 @@ public class SQLiteSchema extends Schema<SQLiteDatabase, SQLiteTable> {
 
 	@Override
 	protected void doCreate() {
-		LOG.info("SQLite does not support creating schemas. Schema<?, ?> not created: " + name);
+		LOG.info("SQLite does not support creating schemas. Schema not created: " + name);
 	}
 
 	@Override
 	protected void doDrop() {
-		LOG.info("SQLite does not support dropping schemas. Schema<?, ?> not dropped: " + name);
+		LOG.info("SQLite does not support dropping schemas. Schema not dropped: " + name);
 	}
 
 	@Override
