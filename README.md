@@ -83,7 +83,14 @@ Apache License 2.0. See [NOTICE](NOTICE).
 
 ## Getting it
 
-Released to Snaphop's repository (`https://maven.snaphop.com`), not Maven Central:
+Released to Snaphop's repository, not Maven Central:
+
+```xml
+<repository>
+  <id>snaphop-release</id>
+  <url>https://maven.snaphop.com/release</url>
+</repository>
+```
 
 ```xml
 <dependency>
